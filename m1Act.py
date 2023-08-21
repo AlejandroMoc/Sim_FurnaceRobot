@@ -7,15 +7,17 @@ from mesa.visualization.ModularVisualization import ModularServer
 import math
 import heapq
 
-#Posiciones iniciales de los agentes
-pacmanposition=(7,7)
+#Posiciones iniciales de los objetos
+gridsize = 81
+
+#Posición del incinerador (en medio de todo)
+incineratorposition=(gridsize//2,gridsize//2)
 ghostposition1=(1,2)
 
 
 #Funcion distancia
 def distancia_entre_puntos(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
-
 
 #Agregados para A*
 class Node:
@@ -91,7 +93,7 @@ def heuristic(position, goal):
     return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
 
 # Clase fantasma
-class Ghost(Agent):
+class Robot(Agent):
     def __init__(self, model, pos, pac, grid):
         super().__init__(model.next_id(), model)
         self.pos = pos
@@ -104,14 +106,14 @@ class Ghost(Agent):
         
     def step(self):
         pacmannode = self.pac.getPos()
-        path = astar(self.grid, ghostposition1,pacmanposition)
+        path = astar(self.grid, ghostposition1,incineratorposition)
         if self.count < len(path):
             next_move = path[self.count]
             print(next_move)
             self.model.grid.move_agent(self, next_move)          
             self.count += 1
-        
-class Pacman(Agent):
+
+class Incinerator(Agent):
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
@@ -147,13 +149,11 @@ class Pacman(Agent):
         distancia = math.sqrt(dx*dx + dy*dy)
         return distancia < self.radio + fantasma.self.radio
 
-
 #Clase de piso (blanco)
 class Piso(Agent):
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
-
 
 #Clase de bloque de muro (azul)
 class WallBlock(Agent):
@@ -166,27 +166,29 @@ class Maze(Model):
     def __init__(self):
         super().__init__()
         self.schedule = RandomActivation(self)
-        self.grid = MultiGrid(81,81, torus=False)
+        self.grid = MultiGrid(gridsize ,gridsize , torus=False)
+        self.matrix = []
 
-        #Dibujado de la matriz 81x81
+        #Dibujado de la matriz gridsize x gridsize
         i = 0
         j = 0
-        self.matrix = []
-        for i in range(81): 
+        
+        for i in range(gridsize): 
             if i == 0 and j == 0:
-                self.matrix.append([0]*81)
-            elif i == 80 and j == 80:
-                self.matrix.append([0]*81)
+                self.matrix.append([0]*gridsize)
+            elif i == gridsize-1 and j == gridsize-1:
+                self.matrix.append([0]*gridsize)
             else:
                 #matrix.append([0])
-                self.matrix.append([1] *79)
+                self.matrix.append([1] *(gridsize-2))
                 #matrix.append([0])
                 self.matrix[i].insert(0, 0)
-                self.matrix[i].insert(81, 0)
+                self.matrix[i].insert(gridsize, 0)
             j += 1
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
+                
                 #Si la posición tiene 1, es tipo Piso
                 if self.matrix[y][x] == 1:
                     block = Piso(self, (x, y))
@@ -197,43 +199,45 @@ class Maze(Model):
                     #print(f"block at ({x}, {y})")
                     block2 = WallBlock(self, (x, y))
                     self.grid.place_agent(block2, block2.pos)
-                            #Spawnear Pacman en el centro
-        pacman = Pacman(self, pacmanposition)
-        self.grid.place_agent(pacman, pacman.pos)
-        self.schedule.add(pacman)
+        
+        #Spawnear Incinerator en el centro      
+        incinerator = Incinerator(self, incineratorposition)
+        self.grid.place_agent(incinerator, incinerator.pos)
+        self.schedule.add(incinerator)
 
-        #Spawnear Ghost
-        ghost = Ghost(self, ghostposition1, pacman, self.matrix)
-        self.grid.place_agent(ghost, ghost.pos)
-        self.schedule.add(ghost)
+        #Spawnear Robot
+        robot = Robot(self, ghostposition1, incinerator, self.matrix)
+        self.grid.place_agent(robot, robot.pos)
+        self.schedule.add(robot)
 
-        def step(self):
-            self.schedule.step()
+    def step(self):
+        self.schedule.step()
 
 def agent_portrayal(agent):
     
     #Definir presets
     wallblocka = {"Shape": "rect", "w": 1.1, "h":1.1, "Filled": "true", "Color": "#1543e6", "Layer": 1}
-    pacmana={"Shape": "circle", "r": 1, "Filled": "true", "Color": "Orange", "Layer": 0}
-    ghosta = {"Shape": "ghost.png", "Layer": 1}
+    #incineratora={"Shape": "circle", "r": 1, "Filled": "true", "Color": "Orange", "Layer": 0}
+    incineratora= {"Shape": "horno.png", "Layer": 1}
+    robota = {"Shape": "robot.png", "Layer": 1}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#e0ecff", "Layer": 0}
 
-        
+    #Regresar preset
     if type(agent)==Piso:
         return(pisoa)
     elif type(agent)==WallBlock:
         return(wallblocka)
-    elif type(agent)==Pacman:
-        return(pacmana)
-    elif type(agent)==Ghost:
-        return(ghosta)
+    elif type(agent)==Incinerator:
+        return(incineratora)
+    elif type(agent)==Robot:
+        return(robota)
     else:
         print('Error')
 
-grid = CanvasGrid(agent_portrayal, 81,81, 486, 486)
+grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *7, gridsize *7)
 
 #Conectar con el puerto para poder visualizar
-server = ModularServer(Maze, [grid], "PacMan", {})
+server = ModularServer(Maze, [grid], "Robots Recolectores", {})
 
 #El port original es 8522
 server.port = 8525
