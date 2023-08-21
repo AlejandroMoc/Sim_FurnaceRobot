@@ -8,7 +8,7 @@ import math
 import heapq
 
 #Posiciones iniciales de los objetos
-gridsize = 81
+gridsize = 53
 
 #Posición del incinerador (en medio de todo)
 incineratorposition=(gridsize//2,gridsize//2)
@@ -216,11 +216,13 @@ class Maze(Model):
 def agent_portrayal(agent):
     
     #Definir presets
-    wallblocka = {"Shape": "rect", "w": 1.1, "h":1.1, "Filled": "true", "Color": "#1543e6", "Layer": 1}
+    #wallblocka = {"Shape": "rect", "w": 1.1, "h":1.1, "Filled": "true", "Color": "#1543e6", "Layer": 1}
     #incineratora={"Shape": "circle", "r": 1, "Filled": "true", "Color": "Orange", "Layer": 0}
-    incineratora= {"Shape": "horno.png", "Layer": 1}
-    robota = {"Shape": "robot.png", "Layer": 1}
-    pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#e0ecff", "Layer": 0}
+    incineratora= {"Shape": "C:/Users/GhulRasal/Desktop/ModelAgente/Luciano/M1-Actividad Roomba/horno.png", "Layer": 1}
+    robota = {"Shape": "steve.png", "Layer": 1}
+    #pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#e0ecff", "Layer": 0}
+    pisoa = {"Shape": "pasto.jpg", "Layer": 1}
+    wallblocka = {"Shape": "piedra.png", "Layer": 1}
 
     #Regresar preset
     if type(agent)==Piso:
@@ -234,7 +236,7 @@ def agent_portrayal(agent):
     else:
         print('Error')
 
-grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *7, gridsize *7)
+grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *10)
 
 #Conectar con el puerto para poder visualizar
 server = ModularServer(Maze, [grid], "Robots Recolectores", {})
