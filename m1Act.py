@@ -166,25 +166,24 @@ class Maze(Model):
     def __init__(self):
         super().__init__()
         self.schedule = RandomActivation(self)
-        self.grid = MultiGrid(17, 14, torus=False)
+        self.grid = MultiGrid(81,81, torus=False)
 
-        #Matriz del laberinto
-        self.matrix = [
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-            [0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0],
-            [0,1,0,1,0,0,0,1,1,1,0,1,0,1,0,1,0],
-            [0,1,1,1,0,1,0,0,0,0,0,1,0,1,1,1,0],
-            [0,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,0],
-            [0,1,0,1,0,1,0,0,0,0,0,1,1,1,0,1,0],
-            [0,1,1,1,0,1,0,1,1,1,0,1,0,1,0,1,0],
-            [0,1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,0],
-            [0,1,0,1,1,1,0,0,1,0,0,1,0,1,1,1,0],
-            [0,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,0],
-            [0,1,1,1,0,1,0,0,0,0,0,1,0,1,1,1,0],
-            [0,1,0,1,0,1,0,1,1,1,0,0,0,1,0,1,0],
-            [0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0],
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        ]
+        #Dibujado de la matriz 81x81
+        i = 0
+        j = 0
+        self.matrix = []
+        for i in range(81): 
+            if i == 0 and j == 0:
+                self.matrix.append([0]*81)
+            elif i == 80 and j == 80:
+                self.matrix.append([0]*81)
+            else:
+                #matrix.append([0])
+                self.matrix.append([1] *79)
+                #matrix.append([0])
+                self.matrix[i].insert(0, 0)
+                self.matrix[i].insert(81, 0)
+            j += 1
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
@@ -198,7 +197,7 @@ class Maze(Model):
                     #print(f"block at ({x}, {y})")
                     block2 = WallBlock(self, (x, y))
                     self.grid.place_agent(block2, block2.pos)
-                         #Spawnear Pacman en el centro
+                            #Spawnear Pacman en el centro
         pacman = Pacman(self, pacmanposition)
         self.grid.place_agent(pacman, pacman.pos)
         self.schedule.add(pacman)
@@ -208,8 +207,8 @@ class Maze(Model):
         self.grid.place_agent(ghost, ghost.pos)
         self.schedule.add(ghost)
 
-    def step(self):
-        self.schedule.step()
+        def step(self):
+            self.schedule.step()
 
 def agent_portrayal(agent):
     
@@ -231,7 +230,7 @@ def agent_portrayal(agent):
     else:
         print('Error')
 
-grid = CanvasGrid(agent_portrayal, 17, 14, 450, 450)
+grid = CanvasGrid(agent_portrayal, 81,81, 486, 486)
 
 #Conectar con el puerto para poder visualizar
 server = ModularServer(Maze, [grid], "PacMan", {})
