@@ -218,11 +218,12 @@ def agent_portrayal(agent):
     #Definir presets
     #wallblocka = {"Shape": "rect", "w": 1.1, "h":1.1, "Filled": "true", "Color": "#1543e6", "Layer": 1}
     #incineratora={"Shape": "circle", "r": 1, "Filled": "true", "Color": "Orange", "Layer": 0}
-    incineratora= {"Shape": "C:/Users/GhulRasal/Desktop/ModelAgente/Luciano/M1-Actividad Roomba/horno.png", "Layer": 1}
+    incineratora= {"Shape": "horno.png", "Layer": 1}
     robota = {"Shape": "steve.png", "Layer": 1}
-    #pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#e0ecff", "Layer": 0}
-    pisoa = {"Shape": "pasto.jpg", "Layer": 1}
-    wallblocka = {"Shape": "piedra.png", "Layer": 1}
+    pisoa = {"Shape": "rect", "w": 1.1, "h":1.1, "Filled": "true", "Color": "#3e7a3b", "Layer": 0}
+    #pisoa = {"Shape": "pasto.jpg", "Layer": 1}
+    # wallblocka = {"Shape": "piedra.png", "Layer": 1}
+    wallblocka = {"Shape": "rect", "w": 1.5, "h":1.5, "Filled": "true", "Color": "#706d64", "Layer": 1}
 
     #Regresar preset
     if type(agent)==Piso:
