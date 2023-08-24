@@ -14,7 +14,6 @@ gridsize = 53
 incineratorposition=(gridsize//2,gridsize//2)
 ghostposition1=(1,2)
 
-
 #Funcion distancia
 def distancia_entre_puntos(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
@@ -92,7 +91,7 @@ def get_neighbors(position, grid):
 def heuristic(position, goal):
     return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
 
-# Clase fantasma
+# Clase de robot
 class Robot(Agent):
     def __init__(self, model, pos, pac, grid):
         super().__init__(model.next_id(), model)
@@ -149,20 +148,26 @@ class Incinerator(Agent):
         distancia = math.sqrt(dx*dx + dy*dy)
         return distancia < self.radio + fantasma.self.radio
 
-#Clase de piso (blanco)
+#Clase de piso
 class Piso(Agent):
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
 
-#Clase de bloque de muro (azul)
+#Clase de muro
 class WallBlock(Agent):
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
+       
+#Clase de basura
+class Basura(Agent):
+    def __init__(self, model, pos):
+        super().__init__(model.next_id(), model)
+        self.pos = pos
 
-#Clase de modelo (laberinto)
-class Maze(Model):
+#Clase de modelo
+class Zona(Model):
     def __init__(self):
         super().__init__()
         self.schedule = RandomActivation(self)
@@ -220,10 +225,11 @@ def agent_portrayal(agent):
     #incineratora={"Shape": "circle", "r": 1, "Filled": "true", "Color": "Orange", "Layer": 0}
     incineratora= {"Shape": "horno.png", "Layer": 1}
     robota = {"Shape": "steve.png", "Layer": 1}
-    pisoa = {"Shape": "rect", "w": 1.1, "h":1.1, "Filled": "true", "Color": "#3e7a3b", "Layer": 0}
+    pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "white", "Layer": 0}
     #pisoa = {"Shape": "pasto.jpg", "Layer": 1}
     # wallblocka = {"Shape": "piedra.png", "Layer": 1}
-    wallblocka = {"Shape": "rect", "w": 1.5, "h":1.5, "Filled": "true", "Color": "#706d64", "Layer": 1}
+    wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
+    basuraa = {"Shape": "coal.png", "Layer": 1}
 
     #Regresar preset
     if type(agent)==Piso:
@@ -234,14 +240,16 @@ def agent_portrayal(agent):
         return(incineratora)
     elif type(agent)==Robot:
         return(robota)
+    elif type(agent)==Basura:
+        return(basuraa)
     else:
         print('Error')
 
 grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *10)
 
 #Conectar con el puerto para poder visualizar
-server = ModularServer(Maze, [grid], "Robots Recolectores", {})
+server = ModularServer(Zona, [grid], "Robots Recolectores", {})
 
 #El port original es 8522
-server.port = 8525
+server.port = 8521
 server.launch()
