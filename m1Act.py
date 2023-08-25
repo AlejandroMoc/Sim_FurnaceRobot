@@ -9,7 +9,6 @@ from mesa.time import RandomActivation
 from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.UserParam import Slider
-from mesa.visualization.UserParam import Checkbox
 from mesa.datacollection import DataCollector
 from mesa.visualization.modules import ChartModule
 
@@ -18,7 +17,15 @@ gridsize = 53
 
 #Posición del incinerador (en medio de todo)
 incineratorposition=(gridsize//2,gridsize//2)
-robotposition1=(gridsize//4,gridsize//4)
+robotposition1=(gridsize//6,gridsize//6)
+
+robotposition2=(gridsize//-6,gridsize//-6)
+
+#HACE FALTA EMPEZAR A USAR ESTE ARREGLO EN VEZ DE LOS ROBOTS POSITIONS INDIVIDUALES
+robotpositions=[
+    (gridsize//6,gridsize//6),
+    (gridsize//6+gridsize//2,gridsize//6+gridsize//2),
+    ]
 
 #Funciones para pathfinding
 def distancia_entre_puntos(p1, p2):
@@ -208,7 +215,7 @@ class Basura(Agent):
 
 class Zona(Model):
 
-    def __init__(self, height=50, width=50, density=0.6):
+    def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=53):
         super().__init__()
         self.schedule = RandomActivation(self)
         self.grid = MultiGrid(gridsize, gridsize, torus=False)
@@ -259,14 +266,26 @@ class Zona(Model):
         self.grid.place_agent(incinerator, incinerator.pos)
         self.schedule.add(incinerator)
 
-        #Spawnear Robot
+        #Spawnear Robots
+        robotos=[]
+        
+        # for i in robotpositions:
+        #     robotos[i] = Robot(self, i, incinerator, self.matrix)
+        #     self.grid.place_agent(robotos[i], robotos[i].pos)
+        #     self.schedule.add(robotos[i])
+            
         robot = Robot(self, robotposition1, incinerator, self.matrix)
         self.grid.place_agent(robot, robot.pos)
         self.schedule.add(robot)
         
-        #Contar cuántos árboles ya se quemaron, dividir esa cantidad con respecto a árboles, dando porcentaje
+        robot2 = Robot(self, robotposition2, incinerator, self.matrix)
+        self.grid.place_agent(robot2, robot2.pos)
+        self.schedule.add(robot2)
+        
+        
+        # Contar cuántos árboles ya se recolectaron. Dividir cantidad con respecto a total, dando porcentaje
         #Función lambda es una función anónima que puede pasar como parámetro             
-        self.datacollector = DataCollector({"Percent burned": lambda m: self.count_type(m, Basura.BURNED_OUT) / len(self.schedule.agents)})
+        self.datacollector = DataCollector({"Porcentaje recolectado": lambda m: self.count_type(m, Basura.BURNED_OUT) / len(self.schedule.agents)})
 
     @staticmethod
     def count_type(model, condition):
@@ -309,9 +328,9 @@ def agent_portrayal(agent):
     basuraa = {"Shape": "coal.png", "Layer": 1}
 
     #Regresar preset
-    if type(agent)==Piso:
-        return(pisoa)
-    elif type(agent)==WallBlock:
+    # if type(agent)==Piso:
+    #     return(pisoa)
+    if type(agent)==WallBlock:
         return(wallblocka)
     elif type(agent)==Incinerator:
         return(incineratora)
@@ -319,8 +338,6 @@ def agent_portrayal(agent):
         return(robota)
     elif type(agent)==Basura:
         return(basuraa)
-    else:
-        print('Error')
 
     #return portrayal
 
@@ -330,8 +347,8 @@ grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *1
 chart = ChartModule([{"Label": "Basura recogida", "Color": "Black"}], data_collector_name = 'datacollector')
 
 server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
-    
     "density": Slider("Densidad de la basura", 0.1, 0.01, 1.0, 0.01),
+    "sizeofmatrix": Slider("Tamaño de la simulación", 83, 53, 83, 1),
     "width":50, "height":50,
 })
 
