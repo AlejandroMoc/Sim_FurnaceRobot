@@ -1,5 +1,3 @@
-#Librerias
-
 # Importación de librerías
 import math
 import heapq
@@ -100,8 +98,7 @@ def heuristic(position, goal):
 
 # Clase de robot
 class Robot(Agent):
-    
-    
+        
     FINE = 0
     BURNING = 1
     BURNED_OUT = 2      
@@ -127,6 +124,7 @@ class Robot(Agent):
             self.count += 1
 
 class Incinerator(Agent):
+    
     FINE = 0
     BURNING = 1
     BURNED_OUT = 2
