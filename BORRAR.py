@@ -1,31 +1,24 @@
-#Librerias
-
 # Importación de librerías
-import math
-import heapq
-from random import randrange
 from mesa import Agent, Model
 from mesa.space import MultiGrid
 from mesa.time import RandomActivation
-
 from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
-from mesa.visualization.UserParam import Slider
-from mesa.visualization.UserParam import Checkbox
-from mesa.datacollection import DataCollector
-from mesa.visualization.modules import ChartModule
+import math
+import heapq
 
 #Posiciones iniciales de los objetos
 gridsize = 53
 
 #Posición del incinerador (en medio de todo)
 incineratorposition=(gridsize//2,gridsize//2)
-robotposition1=(gridsize//4,gridsize//4)
+ghostposition1=(1,2)
 
-#Funciones para pathfinding
+#Funcion distancia
 def distancia_entre_puntos(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
 
+#Agregados para A*
 class Node:
     def __init__(self, position, parent=None):
         self.position = position
@@ -100,12 +93,6 @@ def heuristic(position, goal):
 
 # Clase de robot
 class Robot(Agent):
-    
-    
-    FINE = 0
-    BURNING = 1
-    BURNED_OUT = 2      
-    
     def __init__(self, model, pos, pac, grid):
         super().__init__(model.next_id(), model)
         self.pos = pos
@@ -115,11 +102,10 @@ class Robot(Agent):
         self.last = pos
         self.grid = grid
         self.count = 0
-        self.condition = self.FINE
         
     def step(self):
         pacmannode = self.pac.getPos()
-        path = astar(self.grid, robotposition1,incineratorposition)
+        path = astar(self.grid, ghostposition1,incineratorposition)
         if self.count < len(path):
             next_move = path[self.count]
             print(next_move)
@@ -127,15 +113,10 @@ class Robot(Agent):
             self.count += 1
 
 class Incinerator(Agent):
-    FINE = 0
-    BURNING = 1
-    BURNED_OUT = 2
-    
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
         self.radio = 1
-        self.condition = self.FINE
 
     def step(self):
         """ 
@@ -167,65 +148,33 @@ class Incinerator(Agent):
         distancia = math.sqrt(dx*dx + dy*dy)
         return distancia < self.radio + fantasma.self.radio
 
+#Clase de piso
 class Piso(Agent):
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
 
+#Clase de muro
 class WallBlock(Agent):
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
-
-#Agentes
+       
+#Clase de basura
 class Basura(Agent):
-    FINE = 0
-    BURNING = 1
-    BURNED_OUT = 2
-    
-    def __init__(self, model: Model):
+    def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
-        self.condition = self.FINE
-    
-    def step(self):
-        if self.condition == self.BURNING:
+        self.pos = pos
 
-            #if self.probability_of_spread2 < self.probability_of_spread:
-                
-                #Valor default de la posición del fuego
-                #fire_neighbors = self.pos
-                
-                #Quemar vecino (no aplica)
-                # if self.model.grid.out_of_bounds(fire_neighbors): #Se cambio el condicional inicial
-                #     return() #Se agrega un if para cuando se pase del grid
-                # elif self.probability_of_spread2<self.probability_of_spread:
-                #     for neighbor in self.model.grid.iter_neighbors(fire_neighbors, moore=True):                      #CAMBIADO SELF.POS PARA QUE USE fire_neighbors
-                #         if neighbor.condition == self.FINE:
-                #             neighbor.condition = self.BURNING
-                #     self.condition = self.BURNED_OUT                 
-            
-            #ESTO SE TIENE QUE ACTUALIZAR
-            #Cuando el robot lo recoja, borrar
-            self.condition = self.BURNED_OUT
-
+#Clase de modelo
 class Zona(Model):
-
-    def __init__(self, height=50, width=50, density=0.6):
+    def __init__(self):
         super().__init__()
         self.schedule = RandomActivation(self)
-        self.grid = MultiGrid(gridsize, gridsize, torus=False)
-        
-        #ESTO SE DEBE CAMBIAR SUPONGO
-        for _, (x, y) in self.grid.coord_iter():
-            if self.random.random() < density:
-                basura = Basura(self)
-                # if x == 25: #Origen cambiado al centro del grid
-                #     basura.condition = Basura.BURNING
-                self.grid.place_agent(basura, (x, y))
-                self.schedule.add(basura)
-                
+        self.grid = MultiGrid(gridsize ,gridsize , torus=False)
+        self.matrix = []
+
         #Dibujado de la matriz gridsize x gridsize
-        self.matrix=[]
         i = 0
         j = 0
         
@@ -262,51 +211,23 @@ class Zona(Model):
         self.schedule.add(incinerator)
 
         #Spawnear Robot
-        robot = Robot(self, robotposition1, incinerator, self.matrix)
+        robot = Robot(self, ghostposition1, incinerator, self.matrix)
         self.grid.place_agent(robot, robot.pos)
         self.schedule.add(robot)
-        
-        #Contar cuántos árboles ya se quemaron, dividir esa cantidad con respecto a árboles, dando porcentaje
-        #Función lambda es una función anónima que puede pasar como parámetro             
-        self.datacollector = DataCollector({"Percent burned": lambda m: self.count_type(m, Basura.BURNED_OUT) / len(self.schedule.agents)})
 
-    @staticmethod
-    def count_type(model, condition):
-        count = 0
-        for basura in model.schedule.agents:
-            if basura.condition == condition:
-                count += 1
-        return count
-    
     def step(self):
         self.schedule.step()
-        self.datacollector.collect(self)
-        
-        # Ejecutar hasta paso específico (opcional)
-        # if self.schedule.steps==20:
-        #     self.running=False
-        
+
 def agent_portrayal(agent):
-    # if agent.condition == Basura.FINE:
-    #     portrayal = {"Shape": "coal.png", "Layer": 1}
-    # elif agent.condition == Basura.BURNING:
-    #     portrayal = {"Shape": "circle", "Filled": "true", "Color": "Red", "r": 0.75, "Layer": 0}
-    # elif agent.condition == Basura.BURNED_OUT:
-    #     portrayal = {"Shape": "circle", "Filled": "true", "Color": "Gray", "r": 0.75, "Layer": 0}
-    # elif agent.condition == Piso:
-    #     portrayal= {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "white", "Layer": 0}
-    # elif agent.condition == Incinerator:
-    #     portrayal= {"Shape": "horno.png", "Layer": 1}
-    # elif agent.condition == Robot:
-    #     portrayal= {"Shape": "steve.png", "Layer": 1}
-    # elif agent.condition == WallBlock:
-    #     portrayal= {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
-    # else:
-    #     portrayal = {}
     
-    incineratora= {"Shape": "horno.png", "Layer": 2}
-    robota = {"Shape": "steve.png", "Layer": 3}
-    pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
+    #Definir presets
+    #wallblocka = {"Shape": "rect", "w": 1.1, "h":1.1, "Filled": "true", "Color": "#1543e6", "Layer": 1}
+    #incineratora={"Shape": "circle", "r": 1, "Filled": "true", "Color": "Orange", "Layer": 0}
+    incineratora= {"Shape": "horno.png", "Layer": 1}
+    robota = {"Shape": "steve.png", "Layer": 1}
+    pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "white", "Layer": 0}
+    #pisoa = {"Shape": "pasto.jpg", "Layer": 1}
+    # wallblocka = {"Shape": "piedra.png", "Layer": 1}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
     basuraa = {"Shape": "coal.png", "Layer": 1}
 
@@ -324,18 +245,11 @@ def agent_portrayal(agent):
     else:
         print('Error')
 
-    #return portrayal
-
 grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *10)
 
-#Pregunta 1.3
-chart = ChartModule([{"Label": "Basura recogida", "Color": "Black"}], data_collector_name = 'datacollector')
+#Conectar con el puerto para poder visualizar
+server = ModularServer(Zona, [grid], "Robots Recolectores", {})
 
-server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
-    
-    "density": Slider("Densidad de la basura", 0.1, 0.01, 1.0, 0.01),
-    "width":50, "height":50,
-})
-
-server.port = 8526
+#El port original es 8522
+server.port = 8521
 server.launch()
