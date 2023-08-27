@@ -17,10 +17,8 @@ gridsize = 53
 
 #Posición del incinerador (en medio de todo)
 incineratorposition=(gridsize//2,gridsize//2)
-robotposition1=(gridsize//6,gridsize//6)
-robotposition2=(gridsize//-6,gridsize//-6)
 
-#HACE FALTA EMPEZAR A USAR ESTE ARREGLO EN VEZ DE LOS ROBOTS POSITIONS INDIVIDUALES
+#Posiciones de cada robot 
 robotpositions=[
     (gridsize//6,gridsize//6),
     (gridsize//6, gridsize - 1 - gridsize//6),
@@ -319,11 +317,11 @@ def agent_portrayal(agent):
     # else:
     #     portrayal = {}
     
-    incineratora= {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/E3_M1Actividad/horno.png", "Layer": 2}
-    robota = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/E3_M1Actividad/steve.png", "Layer": 3}
+    incineratora= {"Shape": "horno.png", "Layer": 2}
+    robota = {"Shape": "steve.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
-    basuraa = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1/E3_M1Actividad/coal.png", "Layer": 1}
+    basuraa = {"Shape": "coal.png", "Layer": 1}
 
     #Regresar preset
     # if type(agent)==Piso:
