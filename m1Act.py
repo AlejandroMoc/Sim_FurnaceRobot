@@ -18,13 +18,14 @@ gridsize = 53
 #Posición del incinerador (en medio de todo)
 incineratorposition=(gridsize//2,gridsize//2)
 robotposition1=(gridsize//6,gridsize//6)
-
 robotposition2=(gridsize//-6,gridsize//-6)
 
 #HACE FALTA EMPEZAR A USAR ESTE ARREGLO EN VEZ DE LOS ROBOTS POSITIONS INDIVIDUALES
 robotpositions=[
     (gridsize//6,gridsize//6),
-    (gridsize//6+gridsize//2,gridsize//6+gridsize//2),
+    (gridsize//6, gridsize - 1 - gridsize//6),
+    (gridsize - 1 - gridsize//6, gridsize//6),
+    (gridsize - 1 - gridsize//6, gridsize - 1 - gridsize//6)
     ]
 
 #Funciones para pathfinding
@@ -110,20 +111,22 @@ class Robot(Agent):
     BURNING = 1
     BURNED_OUT = 2      
     
-    def __init__(self, model, pos, pac, grid):
+    def __init__(self, model, pos, inc, grid, id):
         super().__init__(model.next_id(), model)
         self.pos = pos
         #Agregado
         self.radio = 1.0
-        self.pac = pac
+        self.inc = inc
         self.last = pos
         self.grid = grid
         self.count = 0
         self.condition = self.FINE
+        #Agregada id de cada robo
+        self.id = id
         
     def step(self):
-        pacmannode = self.pac.getPos()
-        path = astar(self.grid, robotposition1,incineratorposition)
+        inicerator_node = self.inc.getPos()
+        path = astar(self.grid, robotpositions[self.id], incineratorposition)
         if self.count < len(path):
             next_move = path[self.count]
             print(next_move)
@@ -219,7 +222,8 @@ class Zona(Model):
         super().__init__()
         self.schedule = RandomActivation(self)
         self.grid = MultiGrid(gridsize, gridsize, torus=False)
-        
+
+
         #ESTO SE DEBE CAMBIAR SUPONGO
         for _, (x, y) in self.grid.coord_iter():
             if self.random.random() < density:
@@ -267,22 +271,16 @@ class Zona(Model):
         self.schedule.add(incinerator)
 
         #Spawnear Robots
-        robotos=[]
+        robot1 = Robot(self, robotpositions[0], incinerator, self.matrix, 0)
+        robot2 = Robot(self, robotpositions[1], incinerator, self.matrix, 1)
+        robot3 = Robot(self, robotpositions[2], incinerator, self.matrix, 2)
+        robot4 = Robot(self, robotpositions[3], incinerator, self.matrix, 3)
+        robotos=[robot1,robot2,robot3,robot4]
         
-        # for i in robotpositions:
-        #     robotos[i] = Robot(self, i, incinerator, self.matrix)
-        #     self.grid.place_agent(robotos[i], robotos[i].pos)
-        #     self.schedule.add(robotos[i])
+        for robot in robotos:
+            self.grid.place_agent(robot, robot.pos)
+            self.schedule.add(robot)
             
-        robot = Robot(self, robotposition1, incinerator, self.matrix)
-        self.grid.place_agent(robot, robot.pos)
-        self.schedule.add(robot)
-        
-        robot2 = Robot(self, robotposition2, incinerator, self.matrix)
-        self.grid.place_agent(robot2, robot2.pos)
-        self.schedule.add(robot2)
-        
-        
         # Contar cuántos árboles ya se recolectaron. Dividir cantidad con respecto a total, dando porcentaje
         #Función lambda es una función anónima que puede pasar como parámetro             
         self.datacollector = DataCollector({"Porcentaje recolectado": lambda m: self.count_type(m, Basura.BURNED_OUT) / len(self.schedule.agents)})
@@ -321,11 +319,11 @@ def agent_portrayal(agent):
     # else:
     #     portrayal = {}
     
-    incineratora= {"Shape": "horno.png", "Layer": 2}
-    robota = {"Shape": "steve.png", "Layer": 3}
+    incineratora= {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/E3_M1Actividad/horno.png", "Layer": 2}
+    robota = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/E3_M1Actividad/steve.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
-    basuraa = {"Shape": "coal.png", "Layer": 1}
+    basuraa = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1/E3_M1Actividad/coal.png", "Layer": 1}
 
     #Regresar preset
     # if type(agent)==Piso:
