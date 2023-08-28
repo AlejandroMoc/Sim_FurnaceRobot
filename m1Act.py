@@ -12,19 +12,8 @@ from mesa.visualization.UserParam import Slider
 from mesa.datacollection import DataCollector
 from mesa.visualization.modules import ChartModule
 
-#Posiciones iniciales de los objetos
-gridsize = 53
-
-#Posición del incinerador (en medio de todo)
-incineratorposition=(gridsize//2,gridsize//2)
-
-#Posiciones de cada robot 
-robotpositions=[
-    (gridsize//6,gridsize//6),
-    (gridsize//6, gridsize - 1 - gridsize//6),
-    (gridsize - 1 - gridsize//6, gridsize//6),
-    (gridsize - 1 - gridsize//6, gridsize - 1 - gridsize//6)
-    ]
+#gridsize inicial
+gridsize = 83
 
 #Funciones para pathfinding
 def distancia_entre_puntos(p1, p2):
@@ -119,12 +108,14 @@ class Robot(Agent):
         self.grid = grid
         self.count = 0
         self.condition = self.FINE
-        #Agregada id de cada robo
+        #Agregada id de cada robot
         self.id = id
+        
+        self.basura = False
         
     def step(self):
         inicerator_node = self.inc.getPos()
-        path = astar(self.grid, robotpositions[self.id], incineratorposition)
+        path = astar(self.grid, self.last, inicerator_node)
         if self.count < len(path):
             next_move = path[self.count]
             print(next_move)
@@ -216,11 +207,22 @@ class Basura(Agent):
 
 class Zona(Model):
 
-    def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=53):
+    def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=83):
         super().__init__()
         self.schedule = RandomActivation(self)
-        self.grid = MultiGrid(gridsize, gridsize, torus=False)
-
+        self.sizeofmatrix = sizeofmatrix
+        
+        #Posiciones iniciales colocadas en clase Zona debido a error que tenian al modificar el sizeofmatrix
+        #Posición del incinerador (en medio de todo)
+        incineratorposition=(sizeofmatrix//2,sizeofmatrix//2)
+        #Posiciones de cada robot
+        robotpositions=[
+            (self.sizeofmatrix//6,self.sizeofmatrix//6),
+            (self.sizeofmatrix//6, self.sizeofmatrix - 1 - self.sizeofmatrix//6),
+            (self.sizeofmatrix - 1 - self.sizeofmatrix//6, self.sizeofmatrix//6),
+            (self.sizeofmatrix - 1 - self.sizeofmatrix//6, self.sizeofmatrix - 1 - self.sizeofmatrix//6)
+        ]
+        self.grid = MultiGrid(self.sizeofmatrix, self.sizeofmatrix, torus=False)
 
         #ESTO SE DEBE CAMBIAR SUPONGO
         for _, (x, y) in self.grid.coord_iter():
@@ -231,22 +233,22 @@ class Zona(Model):
                 self.grid.place_agent(basura, (x, y))
                 self.schedule.add(basura)
                 
-        #Dibujado de la matriz gridsize x gridsize
+        #Dibujado de la matriz sizeofmatrix x sizeofmatrix
         self.matrix=[]
         i = 0
         j = 0
         
-        for i in range(gridsize): 
+        for i in range(self.sizeofmatrix): 
             if i == 0 and j == 0:
-                self.matrix.append([0]*gridsize)
-            elif i == gridsize-1 and j == gridsize-1:
-                self.matrix.append([0]*gridsize)
+                self.matrix.append([0]*self.sizeofmatrix)
+            elif i == self.sizeofmatrix-1 and j == self.sizeofmatrix-1:
+                self.matrix.append([0]*self.sizeofmatrix)
             else:
                 #matrix.append([0])
-                self.matrix.append([1] *(gridsize-2))
+                self.matrix.append([1] *(self.sizeofmatrix-2))
                 #matrix.append([0])
                 self.matrix[i].insert(0, 0)
-                self.matrix[i].insert(gridsize, 0)
+                self.matrix[i].insert(self.sizeofmatrix, 0)
             j += 1
         
         for x in range(self.grid.width):
@@ -273,7 +275,7 @@ class Zona(Model):
         robot2 = Robot(self, robotpositions[1], incinerator, self.matrix, 1)
         robot3 = Robot(self, robotpositions[2], incinerator, self.matrix, 2)
         robot4 = Robot(self, robotpositions[3], incinerator, self.matrix, 3)
-        robotos=[robot1,robot2,robot3,robot4]
+        robotos=[robot1, robot2, robot3, robot4]
         
         for robot in robotos:
             self.grid.place_agent(robot, robot.pos)
