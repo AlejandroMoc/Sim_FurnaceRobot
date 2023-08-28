@@ -350,7 +350,10 @@ def agent_portrayal(agent):
     elif type(agent)==Incinerator:
         return(incineratora)
     elif type(agent)==Robot:
-        return(robota)
+        if agent.condition == agent.FINE:
+            return(robota)
+        else:
+            return(incineratora)
     elif type(agent)==Basura:
         return(basuraa)
 
