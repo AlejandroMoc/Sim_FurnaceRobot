@@ -262,15 +262,23 @@ class Zona(Model):
         
         #print(self.matrix)
         
+        lmaoBig = []
+        
         for x in range(self.grid.width):
             for y in range(self.grid.height):
                 if self.random.random() < density:
                     if self.matrix[y][x] == 1:
+                        lmao = []
                         basura = Basura(self)
                         # if x == 25: #Origen cambiado al centro del grid
                         #     basura.condition = Basura.BURNING
                         self.grid.place_agent(basura, (x, y))
+                        lmao.append(x)
+                        lmao.append(y)
+                        lmaoBig.append(lmao)
                         self.schedule.add(basura)
+        
+        print(lmaoBig)
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
