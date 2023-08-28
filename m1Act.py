@@ -101,6 +101,7 @@ class Robot(Agent):
     def __init__(self, model, pos, inc, grid, id):
         super().__init__(model.next_id(), model)
         self.pos = pos
+        self.iniPos = pos
         #Agregado
         self.radio = 1.0
         self.inc = inc
@@ -114,13 +115,24 @@ class Robot(Agent):
         self.basura = False
         
     def step(self):
-        inicerator_node = self.inc.getPos()
-        path = astar(self.grid, self.last, inicerator_node)
-        if self.count < len(path):
-            next_move = path[self.count]
-            print(next_move)
-            self.model.grid.move_agent(self, next_move)          
-            self.count += 1
+        if self.condition == self.BURNING:
+            inicerator_node = self.inc.getPos()
+            path = astar(self.grid, self.last, inicerator_node)
+            if self.count < len(path):
+                next_move = path[self.count]
+                print(next_move)
+                self.model.grid.move_agent(self, next_move)          
+                self.count += 1
+        elif self.condition == self.BURNED_OUT:
+            path = astar(self.grid, self.last, self.iniPos)
+            if self.count < len(path):
+                next_move = path[self.count]
+                print(next_move)
+                self.model.grid.move_agent(self, next_move)          
+                self.count += 1
+        else:
+            self.model.grid.move_agent(self, next_move)
+            
 
 class Incinerator(Agent):
     
@@ -217,21 +229,14 @@ class Zona(Model):
         incineratorposition=(sizeofmatrix//2,sizeofmatrix//2)
         #Posiciones de cada robot
         robotpositions=[
-            (self.sizeofmatrix//6,self.sizeofmatrix//6),
-            (self.sizeofmatrix//6, self.sizeofmatrix - 1 - self.sizeofmatrix//6),
-            (self.sizeofmatrix - 1 - self.sizeofmatrix//6, self.sizeofmatrix//6),
-            (self.sizeofmatrix - 1 - self.sizeofmatrix//6, self.sizeofmatrix - 1 - self.sizeofmatrix//6)
+            (self.sizeofmatrix//self.sizeofmatrix,self.sizeofmatrix//self.sizeofmatrix),
+            (self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix),
+            (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix//self.sizeofmatrix),
+            (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix)
         ]
         self.grid = MultiGrid(self.sizeofmatrix, self.sizeofmatrix, torus=False)
 
         #ESTO SE DEBE CAMBIAR SUPONGO
-        for _, (x, y) in self.grid.coord_iter():
-            if self.random.random() < density:
-                basura = Basura(self)
-                # if x == 25: #Origen cambiado al centro del grid
-                #     basura.condition = Basura.BURNING
-                self.grid.place_agent(basura, (x, y))
-                self.schedule.add(basura)
                 
         #Dibujado de la matriz sizeofmatrix x sizeofmatrix
         self.matrix=[]
@@ -250,6 +255,18 @@ class Zona(Model):
                 self.matrix[i].insert(0, 0)
                 self.matrix[i].insert(self.sizeofmatrix, 0)
             j += 1
+        
+        print(self.matrix)
+        
+        for x in range(self.grid.width):
+            for y in range(self.grid.height):
+                if self.random.random() < density:
+                    if self.matrix[y][x] == 1:
+                        basura = Basura(self)
+                        # if x == 25: #Origen cambiado al centro del grid
+                        #     basura.condition = Basura.BURNING
+                        self.grid.place_agent(basura, (x, y))
+                        self.schedule.add(basura)
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
