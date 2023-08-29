@@ -113,18 +113,121 @@ class Robot(Agent):
         #Agregada id de cada robot
         self.id = id
         self.basura = False
+        #direccion para movimiento en IDLE
+        self.direccion = [1,1] 
         
     def step(self):
-        
         #Si el estado es IDLE, entonces busca basura
         if self.condition == self.IDLE:
-            inicerator_node = self.inc.getPos()
-            path = astar(self.grid, self.last, inicerator_node)
-            if self.count < len(path):
-                next_move = path[self.count]
-                #print(next_move)
+            x,y = self.pos
+            #robot abajo izquierda   
+            if self.id == 0:              
+                #movimientos hacia la derecha y arriba
+                if x < gridsize//2 and self.direccion[0] == 1:
+                    next_move = (x + 1,y)
+                elif x == gridsize//2 and self.direccion[0] == 1:
+                    if (y == gridsize//2 - 1):
+                        return
+                    else:
+                        next_move = (x, y + 1)
+                        self.direccion = [-1,1]
+                    
+                #movimientos hacia la izquierda y arriba
+                elif x > 1 and self.direccion[0] == -1:
+                    next_move = (x - 1,y)
+                elif x == 1 and self.direccion[0] == -1:
+                    if (y == gridsize//2 - 1):
+                        return
+                    else:
+                        next_move = (x, y + 1)
+                        self.direccion = [1,1] 
+                
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
+                
+            #robot izquierda arriba
+            elif self.id == 1: 
+                #movimientos hacia la derecha y abajo
+                if x < gridsize//2 - 1 and self.direccion[0] == 1:
+                    next_move = (x + 1,y)
+                elif x == gridsize//2 - 1 and self.direccion[0] == 1:
+                    if (y == gridsize//2):
+                        return
+                    else:
+                        next_move = (x, y - 1)
+                        self.direccion = [-1,1]
+                    
+                #movimientos hacia la izquierda y abajo
+                elif x > 1 and self.direccion[0] == -1:
+                    next_move = (x - 1,y)
+                elif x == 1 and self.direccion[0] == -1:
+                    if (y == gridsize//2):
+                        return
+                    else:
+                        next_move = (x, y - 1)
+                        self.direccion = [1,1] 
+                
+                self.model.grid.move_agent(self, next_move)          
+                self.count += 1 
+                
+            #robot abajo derecha 
+            elif self.id == 2: 
+                #movimientos hacia la izquierda y arriba
+                if x > gridsize//2 + 1 and self.direccion[0] == 1:
+                    next_move = (x - 1,y)
+                elif x == gridsize//2 + 1 and self.direccion[0] == 1:
+                    if (y == gridsize//2):
+                        return
+                    else:
+                        next_move = (x, y + 1)
+                        self.direccion = [-1,1]
+                    
+                #movimientos hacia la derecha y arriba
+                elif x < gridsize - 2 and self.direccion[0] == -1:
+                    next_move = (x + 1,y)
+                elif x == gridsize - 2 and self.direccion[0] == -1:
+                    if (y == gridsize//2):
+                        return
+                    else:
+                        next_move = (x, y + 1)
+                        self.direccion = [1,1] 
+                
+                self.model.grid.move_agent(self, next_move)          
+                self.count += 1                
+
+            #robot arriba derecha 
+            elif self.id == 3: 
+                #movimientos hacia la izquierda y abajo
+                if x > gridsize//2 and self.direccion[0] == 1:
+                    next_move = (x - 1,y)
+                elif x == gridsize//2 and self.direccion[0] == 1:
+                    if (y == gridsize//2 + 1):
+                        return
+                    else:
+                        next_move = (x, y - 1)
+                        self.direccion = [-1,1]
+                    
+                #movimientos hacia la derecha y abajo
+                elif x < gridsize - 2 and self.direccion[0] == -1:
+                    next_move = (x + 1,y)
+                elif x == gridsize - 2 and self.direccion[0] == -1:
+                    if (y == gridsize//2 + 1):
+                        return
+                    else:
+                        next_move = (x, y - 1)
+                        self.direccion = [1,1] 
+                
+                self.model.grid.move_agent(self, next_move)          
+                self.count += 1  
+                     
+            else:
+                inicerator_node = self.inc.getPos()
+                path = astar(self.grid, self.last, inicerator_node)
+                if self.count < len(path):
+                    next_move = path[self.count]
+                    #print(next_move)
+                    self.model.grid.move_agent(self, next_move)          
+                    self.count += 1
                 
         #Si el estado es CARGADO, el robot tiene basura y va rumbo al incinerador
         elif self.condition == self.CARGADO:
@@ -137,6 +240,7 @@ class Robot(Agent):
                 self.count += 1
                 
         #Si el estado es REGRESANDO, entonces voy de regreso a la posición inicial
+        #Se podria implementar con un pathfinding pero teniendo como objetivo la posicion donde encontro la basura
         elif self.condition == self.REGRESANDO:
             path = astar(self.grid, self.last, self.iniPos)
             if self.count < len(path):
@@ -217,6 +321,9 @@ class Zona(Model):
         self.schedule = RandomActivation(self)
         self.sizeofmatrix = sizeofmatrix
         
+        #se actualiza gridsize en caso que se cambie de medidas con el slider
+        global gridsize
+        gridsize = sizeofmatrix
         #Posiciones iniciales
         
         #Posición del incinerador (en medio de todo)
