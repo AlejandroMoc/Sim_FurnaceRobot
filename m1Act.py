@@ -94,9 +94,9 @@ def heuristic(position, goal):
 # Clase de robot
 class Robot(Agent):
         
-    FINE = 0
-    BURNING = 1
-    BURNT_OUT = 2      
+    IDLE = 0
+    CARGADO = 1
+    REGRESANDO = 2 
     
     def __init__(self, model, pos, inc, grid, id):
         super().__init__(model.next_id(), model)
@@ -108,40 +108,40 @@ class Robot(Agent):
         self.last = pos
         self.grid = grid
         self.count = 0
-        self.condition = self.FINE
+        #Condición inicial del robot es IDLE
+        self.condition = self.IDLE
         #Agregada id de cada robot
         self.id = id
-        
         self.basura = False
         
     def step(self):
         
-        #Si el estado es FINE, entonces busca basura
-        if self.condition == self.FINE:
+        #Si el estado es IDLE, entonces busca basura
+        if self.condition == self.IDLE:
             inicerator_node = self.inc.getPos()
             path = astar(self.grid, self.last, inicerator_node)
             if self.count < len(path):
                 next_move = path[self.count]
-                print(next_move)
+                #print(next_move)
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
                 
-        #Si el estado es burning, el robot tiene basura y va rumbo al incinerador
-        elif self.condition == self.BURNING:
+        #Si el estado es CARGADO, el robot tiene basura y va rumbo al incinerador
+        elif self.condition == self.CARGADO:
             inicerator_node = self.inc.getPos()
             path = astar(self.grid, self.last, inicerator_node)
             if self.count < len(path):
                 next_move = path[self.count]
-                print(next_move)
+                #print(next_move)
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
                 
-        #Si el estado es burnt_out entonces voy de regreso a la posición inicial
-        elif self.condition == self.BURNT_OUT:
+        #Si el estado es REGRESANDO, entonces voy de regreso a la posición inicial
+        elif self.condition == self.REGRESANDO:
             path = astar(self.grid, self.last, self.iniPos)
             if self.count < len(path):
                 next_move = path[self.count]
-                print(next_move)
+                #print(next_move)
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
         
@@ -159,27 +159,9 @@ class Incinerator(Agent):
         self.radio = 1
         self.condition = self.FINE
 
-    def step(self):
-        """ 
-        #Obtener todos los movimientos posibles
-        next_moves = self.model.grid.get_neighborhood(self.pos, moore=False)
-        
-        #Separar movimientos posibles
-        posiblemovs=[]
-        for movim in next_moves:
-            x, y = movim
-            if self.model.matrix[y][x] == 0:
-                continue
-            else:
-                posiblemovs.append(movim)
-        
-        #Elegir pos aleatoria de movs posibles y hacer mov
-        next_move = self.random.choice(posiblemovs)
-        #enemigo.update(enemyNode.x,plataformaActual,enemyNode.z);
-        self.model.grid.move_agent(self, next_move)
-        """
-        return None
-        #Agregado
+    #def step(self):
+    #    return None
+
     def getPos(self):
         return self.pos
         
@@ -251,9 +233,9 @@ class Zona(Model):
         
         robotpositions=[
             (1,1),
-            (1, self.sizeofmatrix - 1 - 1),
-            (self.sizeofmatrix - 1 - 1, 1),
-            (self.sizeofmatrix - 1 - 1, self.sizeofmatrix - 1 - 1)
+            (1, self.sizeofmatrix -2),
+            (self.sizeofmatrix -2, 1),
+            (self.sizeofmatrix -2, self.sizeofmatrix -2)
         ]
         
         self.grid = MultiGrid(self.sizeofmatrix, self.sizeofmatrix, torus=False)
@@ -341,6 +323,7 @@ class Zona(Model):
         #     self.running=False
         
 def agent_portrayal(agent):
+    
     # if agent.condition == Basura.FINE:
     #     portrayal = {"Shape": "coal.png", "Layer": 1}
     # elif agent.condition == Basura.BURNING:
@@ -385,13 +368,13 @@ def agent_portrayal(agent):
         
     elif type(agent) == Robot:
         #El robot está buscando basura
-        if agent.condition == agent.FINE:
+        if agent.condition == agent.IDLE:
             return(robota)
         #Tiene basura y va a dejarla al incinerador
-        elif agent.condition == agent.BURNING:
+        elif agent.condition == agent.CARGADO:
             return(robotb)
         #Ya dejó basura, va de regreso a su posición inicial
-        elif agent.condition == agent.BURNT_OUT:
+        elif agent.condition == agent.REGRESANDO:
             return(robotb)
         
     elif type(agent)==Basura:
@@ -406,7 +389,7 @@ chart = ChartModule([{"Label": "Basura recogida", "Color": "Black"}], data_colle
 
 server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
     "density": Slider("Densidad de la basura", 0.1, 0.01, 0.1, 0.01),
-    "sizeofmatrix": Slider("Tamaño de la simulación", gridsize, 33, gridsize, 1),
+    "sizeofmatrix": Slider("Tamaño de la simulación", gridsize, 21, gridsize, 1),
     "width":50, "height":50,
 })
 
