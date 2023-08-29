@@ -12,8 +12,8 @@ from mesa.visualization.UserParam import Slider
 from mesa.datacollection import DataCollector
 from mesa.visualization.modules import ChartModule
 
-#gridsize inicial
-gridsize = 83
+#Gridsize Inicial
+gridsize = 53
 
 #Funciones para pathfinding
 def distancia_entre_puntos(p1, p2):
@@ -96,7 +96,7 @@ class Robot(Agent):
         
     FINE = 0
     BURNING = 1
-    BURNED_OUT = 2      
+    BURNT_OUT = 2      
     
     def __init__(self, model, pos, inc, grid, id):
         super().__init__(model.next_id(), model)
@@ -115,7 +115,9 @@ class Robot(Agent):
         self.basura = False
         
     def step(self):
-        if self.condition == self.BURNING:
+        
+        #Si el estado es FINE, entonces busca basura
+        if self.condition == self.FINE:
             inicerator_node = self.inc.getPos()
             path = astar(self.grid, self.last, inicerator_node)
             if self.count < len(path):
@@ -123,22 +125,33 @@ class Robot(Agent):
                 print(next_move)
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
-        elif self.condition == self.BURNED_OUT:
+                
+        #Si el estado es burning, el robot tiene basura y va rumbo al incinerador
+        elif self.condition == self.BURNING:
+            inicerator_node = self.inc.getPos()
+            path = astar(self.grid, self.last, inicerator_node)
+            if self.count < len(path):
+                next_move = path[self.count]
+                print(next_move)
+                self.model.grid.move_agent(self, next_move)          
+                self.count += 1
+                
+        #Si el estado es burnt_out entonces voy de regreso a la posición inicial
+        elif self.condition == self.BURNT_OUT:
             path = astar(self.grid, self.last, self.iniPos)
             if self.count < len(path):
                 next_move = path[self.count]
                 print(next_move)
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
-        else:
-            self.model.grid.move_agent(self, next_move)
+        
             
 
 class Incinerator(Agent):
     
     FINE = 0
     BURNING = 1
-    BURNED_OUT = 2
+    BURNT_OUT = 2
     
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
@@ -188,34 +201,35 @@ class WallBlock(Agent):
 
 #Agentes
 class Basura(Agent):
+    
     FINE = 0
     BURNING = 1
-    BURNED_OUT = 2
+    BURNT_OUT = 2
     
     def __init__(self, model: Model):
         super().__init__(model.next_id(), model)
         self.condition = self.FINE
     
-    def step(self):
-        if self.condition == self.BURNING:
+    # def step(self):
+    #     if self.condition == self.BURNING:
 
-            #if self.probability_of_spread2 < self.probability_of_spread:
+    #         #if self.probability_of_spread2 < self.probability_of_spread:
                 
-                #Valor default de la posición del fuego
-                #fire_neighbors = self.pos
+    #             #Valor default de la posición del fuego
+    #             #fire_neighbors = self.pos
                 
-                #Quemar vecino (no aplica)
-                # if self.model.grid.out_of_bounds(fire_neighbors): #Se cambio el condicional inicial
-                #     return() #Se agrega un if para cuando se pase del grid
-                # elif self.probability_of_spread2<self.probability_of_spread:
-                #     for neighbor in self.model.grid.iter_neighbors(fire_neighbors, moore=True):                      #CAMBIADO SELF.POS PARA QUE USE fire_neighbors
-                #         if neighbor.condition == self.FINE:
-                #             neighbor.condition = self.BURNING
-                #     self.condition = self.BURNED_OUT                 
+    #             #Quemar vecino (no aplica)
+    #             # if self.model.grid.out_of_bounds(fire_neighbors): #Se cambio el condicional inicial
+    #             #     return() #Se agrega un if para cuando se pase del grid
+    #             # elif self.probability_of_spread2<self.probability_of_spread:
+    #             #     for neighbor in self.model.grid.iter_neighbors(fire_neighbors, moore=True):                      #CAMBIADO SELF.POS PARA QUE USE fire_neighbors
+    #             #         if neighbor.condition == self.FINE:
+    #             #             neighbor.condition = self.BURNING
+    #             #     self.condition = self.BURNT_OUT                 
             
-            #ESTO SE TIENE QUE ACTUALIZAR
-            #Cuando el robot lo recoja, borrar
-            self.condition = self.BURNED_OUT
+    #         #ESTO SE TIENE QUE ACTUALIZAR
+    #         #Cuando el robot lo recoja, borrar
+    #         self.condition = self.BURNT_OUT
 
 class Zona(Model):
 
@@ -228,12 +242,20 @@ class Zona(Model):
         #Posición del incinerador (en medio de todo)
         incineratorposition=(sizeofmatrix//2,sizeofmatrix//2)
         #Posiciones de cada robot
+        # robotpositions=[
+        #     (self.sizeofmatrix//self.sizeofmatrix,self.sizeofmatrix//self.sizeofmatrix),
+        #     (self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix),
+        #     (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix//self.sizeofmatrix),
+        #     (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix)
+        # ]
+        
         robotpositions=[
-            (self.sizeofmatrix//self.sizeofmatrix,self.sizeofmatrix//self.sizeofmatrix),
-            (self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix),
-            (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix//self.sizeofmatrix),
-            (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix)
+            (1,1),
+            (1, self.sizeofmatrix - 1 - 1),
+            (self.sizeofmatrix - 1 - 1, 1),
+            (self.sizeofmatrix - 1 - 1, self.sizeofmatrix - 1 - 1)
         ]
+        
         self.grid = MultiGrid(self.sizeofmatrix, self.sizeofmatrix, torus=False)
 
         #ESTO SE DEBE CAMBIAR SUPONGO
@@ -256,7 +278,7 @@ class Zona(Model):
                 self.matrix[i].insert(self.sizeofmatrix, 0)
             j += 1
         
-        print(self.matrix)
+        #print(self.matrix)
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
@@ -300,7 +322,7 @@ class Zona(Model):
             
         # Contar cuántos árboles ya se recolectaron. Dividir cantidad con respecto a total, dando porcentaje
         #Función lambda es una función anónima que puede pasar como parámetro             
-        self.datacollector = DataCollector({"Porcentaje recolectado": lambda m: self.count_type(m, Basura.BURNED_OUT) / len(self.schedule.agents)})
+        self.datacollector = DataCollector({"Porcentaje recolectado": lambda m: self.count_type(m, Basura.BURNT_OUT) / len(self.schedule.agents)})
 
     @staticmethod
     def count_type(model, condition):
@@ -323,7 +345,7 @@ def agent_portrayal(agent):
     #     portrayal = {"Shape": "coal.png", "Layer": 1}
     # elif agent.condition == Basura.BURNING:
     #     portrayal = {"Shape": "circle", "Filled": "true", "Color": "Red", "r": 0.75, "Layer": 0}
-    # elif agent.condition == Basura.BURNED_OUT:
+    # elif agent.condition == Basura.BURNT_OUT:
     #     portrayal = {"Shape": "circle", "Filled": "true", "Color": "Gray", "r": 0.75, "Layer": 0}
     # elif agent.condition == Piso:
     #     portrayal= {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "white", "Layer": 0}
@@ -337,23 +359,41 @@ def agent_portrayal(agent):
     #     portrayal = {}
     
     incineratora= {"Shape": "horno.png", "Layer": 2}
+    incineratorb= {"Shape": "hornoencendido.png", "Layer": 2}
     robota = {"Shape": "steve.png", "Layer": 3}
+    robotb = {"Shape": "herobrine.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
-    basuraa = {"Shape": "coal.png", "Layer": 1}
+    #basuraa = {"Shape": "coal.png", "Layer": 1}
+    basuraa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#7b8c89", "Layer": 1}
 
     #Regresar preset
     # if type(agent)==Piso:
     #     return(pisoa)
+    
+    
     if type(agent)==WallBlock:
         return(wallblocka)
+    
     elif type(agent)==Incinerator:
-        return(incineratora)
-    elif type(agent)==Robot:
+        #Si el incinerador no tiene carga, regresar horno
+        if agent.condition == agent.FINE:
+            return(incineratora)
+        #Si el incinerador tiene carga, regresar horno encendido
+        elif agent.condition == agent.BURNING:
+            return(incineratorb)
+        
+    elif type(agent) == Robot:
+        #El robot está buscando basura
         if agent.condition == agent.FINE:
             return(robota)
-        else:
-            return(incineratora)
+        #Tiene basura y va a dejarla al incinerador
+        elif agent.condition == agent.BURNING:
+            return(robotb)
+        #Ya dejó basura, va de regreso a su posición inicial
+        elif agent.condition == agent.BURNT_OUT:
+            return(robotb)
+        
     elif type(agent)==Basura:
         return(basuraa)
 
@@ -365,8 +405,8 @@ grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *1
 chart = ChartModule([{"Label": "Basura recogida", "Color": "Black"}], data_collector_name = 'datacollector')
 
 server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
-    "density": Slider("Densidad de la basura", 0.1, 0.01, 1.0, 0.01),
-    "sizeofmatrix": Slider("Tamaño de la simulación", 83, 53, 83, 1),
+    "density": Slider("Densidad de la basura", 0.1, 0.01, 0.1, 0.01),
+    "sizeofmatrix": Slider("Tamaño de la simulación", gridsize, 33, gridsize, 1),
     "width":50, "height":50,
 })
 
