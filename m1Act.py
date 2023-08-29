@@ -144,20 +144,22 @@ class Robot(Agent):
                 #print(next_move)
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
-        
-            
+
 
 class Incinerator(Agent):
     
-    FINE = 0
-    BURNING = 1
-    BURNT_OUT = 2
+    # FINE = 0
+    # BURNING = 1
+    # BURNT_OUT = 2
+    
+    APAGADO = 0
+    ENCENDIDO = 1
     
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
         self.radio = 1
-        self.condition = self.FINE
+        self.condition = self.APAGADO
 
     #def step(self):
     #    return None
@@ -184,13 +186,8 @@ class WallBlock(Agent):
 #Agentes
 class Basura(Agent):
     
-    FINE = 0
-    BURNING = 1
-    BURNT_OUT = 2
-    
     def __init__(self, model: Model):
         super().__init__(model.next_id(), model)
-        self.condition = self.FINE
     
     # def step(self):
     #     if self.condition == self.BURNING:
@@ -220,9 +217,11 @@ class Zona(Model):
         self.schedule = RandomActivation(self)
         self.sizeofmatrix = sizeofmatrix
         
-        #Posiciones iniciales colocadas en clase Zona debido a error que tenian al modificar el sizeofmatrix
+        #Posiciones iniciales
+        
         #Posición del incinerador (en medio de todo)
         incineratorposition=(sizeofmatrix//2,sizeofmatrix//2)
+        
         #Posiciones de cada robot
         # robotpositions=[
         #     (self.sizeofmatrix//self.sizeofmatrix,self.sizeofmatrix//self.sizeofmatrix),
@@ -262,23 +261,23 @@ class Zona(Model):
         
         #print(self.matrix)
         
-        lmaoBig = []
+        trashPositions = []
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
                 if self.random.random() < density:
                     if self.matrix[y][x] == 1:
-                        lmao = []
+                        trashcoor = []
                         basura = Basura(self)
                         # if x == 25: #Origen cambiado al centro del grid
                         #     basura.condition = Basura.BURNING
                         self.grid.place_agent(basura, (x, y))
-                        lmao.append(x)
-                        lmao.append(y)
-                        lmaoBig.append(lmao)
+                        trashcoor.append(x)
+                        trashcoor.append(y)
+                        trashPositions.append(trashcoor)
                         self.schedule.add(basura)
         
-        print(lmaoBig)
+        print(trashPositions)
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
@@ -294,7 +293,7 @@ class Zona(Model):
                     block2 = WallBlock(self, (x, y))
                     self.grid.place_agent(block2, block2.pos)
         
-        #Spawnear Incinerator en el centro      
+        #Spawnear Incinerator en centro     
         incinerator = Incinerator(self, incineratorposition)
         self.grid.place_agent(incinerator, incinerator.pos)
         self.schedule.add(incinerator)
@@ -310,16 +309,15 @@ class Zona(Model):
             self.grid.place_agent(robot, robot.pos)
             self.schedule.add(robot)
             
-        # Contar cuántos árboles ya se recolectaron. Dividir cantidad con respecto a total, dando porcentaje
+        ### Contar cuántos árboles ya se recolectaron. Dividir cantidad con respecto a total, dando porcentaje
         #Función lambda es una función anónima que puede pasar como parámetro             
-        self.datacollector = DataCollector({"Porcentaje recolectado": lambda m: self.count_type(m, Basura.BURNT_OUT) / len(self.schedule.agents)})
+        self.datacollector = DataCollector({"Porcentaje recolectado": lambda m: self.count_type(m, Basura) / len(self.schedule.agents)})
 
     @staticmethod
     def count_type(model, condition):
         count = 0
         for basura in model.schedule.agents:
-            if basura.condition == condition:
-                count += 1
+            count += 1
         return count
     
     def step(self):
@@ -332,23 +330,6 @@ class Zona(Model):
         
 def agent_portrayal(agent):
     
-    # if agent.condition == Basura.FINE:
-    #     portrayal = {"Shape": "coal.png", "Layer": 1}
-    # elif agent.condition == Basura.BURNING:
-    #     portrayal = {"Shape": "circle", "Filled": "true", "Color": "Red", "r": 0.75, "Layer": 0}
-    # elif agent.condition == Basura.BURNT_OUT:
-    #     portrayal = {"Shape": "circle", "Filled": "true", "Color": "Gray", "r": 0.75, "Layer": 0}
-    # elif agent.condition == Piso:
-    #     portrayal= {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "white", "Layer": 0}
-    # elif agent.condition == Incinerator:
-    #     portrayal= {"Shape": "horno.png", "Layer": 1}
-    # elif agent.condition == Robot:
-    #     portrayal= {"Shape": "steve.png", "Layer": 1}
-    # elif agent.condition == WallBlock:
-    #     portrayal= {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
-    # else:
-    #     portrayal = {}
-    
     incineratora= {"Shape": "horno.png", "Layer": 2}
     incineratorb= {"Shape": "hornoencendido.png", "Layer": 2}
     robota = {"Shape": "steve.png", "Layer": 3}
@@ -357,21 +338,18 @@ def agent_portrayal(agent):
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
     #basuraa = {"Shape": "coal.png", "Layer": 1}
     basuraa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#7b8c89", "Layer": 1}
-
-    #Regresar preset
-    # if type(agent)==Piso:
-    #     return(pisoa)
     
     
     if type(agent)==WallBlock:
         return(wallblocka)
-    
+    # elif type(agent)==Piso:
+    #     return(pisoa)
     elif type(agent)==Incinerator:
         #Si el incinerador no tiene carga, regresar horno
-        if agent.condition == agent.FINE:
+        if agent.condition == agent.APAGADO:
             return(incineratora)
         #Si el incinerador tiene carga, regresar horno encendido
-        elif agent.condition == agent.BURNING:
+        elif agent.condition == agent.ENCENDIDO:
             return(incineratorb)
         
     elif type(agent) == Robot:
