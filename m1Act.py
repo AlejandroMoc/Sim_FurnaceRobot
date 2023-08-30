@@ -116,6 +116,10 @@ class Robot(Agent):
         #direccion para movimiento en IDLE
         self.direccion = [1,1] 
         
+        #atributos asignados para que el robot sepa si repite recorrido
+        self.vueltas = 0
+        self.regreso = False
+        
     def step(self):
         #Si el estado es IDLE, entonces busca basura
         if self.condition == self.IDLE:
@@ -222,30 +226,42 @@ class Robot(Agent):
         
             #robot en medio
             elif self.id == 4:
-                # Definir las direcciones de movimiento en la espiral (derecha, abajo, izquierda, arriba)
-                spiral_directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+                small_grid_1 = gridsize - gridsize // 2 + gridsize // 7 #espacio hacia la derecha
+                small_grid_2 = gridsize // 2 - gridsize // 7 #espacio hacia la izquierda
+                x,y = self.pos           
+                #movimientos hacia la derecha y arriba
+                if x < small_grid_1 - (self.vueltas + 1) and self.direccion[0] == 1 and self.direccion[1] == 1:
+                    next_move = (x + 1,y)
+                elif x == small_grid_1 - (self.vueltas + 1) and self.direccion[1] == 1:
+                    if (y == small_grid_1 - (self.vueltas + 1)):
+                        self.direccion = [-1,-1]
+                        next_move = (x - 1, y)
+                    else:
+                        next_move = (x, y + 1)
+                        self.direccion = [-1,1]
+                    
+                #movimientos hacia la izquierda y arriba
+                elif x > small_grid_2 + self.vueltas and self.direccion[0] == -1:
+                    next_move = (x - 1,y)
+                elif x == small_grid_2 + self.vueltas and self.direccion[1] == -1:
+                    if (y == small_grid_2 + self.vueltas):
+                        if self.vueltas == gridsize//7 - 1: #Se cuenta el numero de vueltas del recorrido
+                            self.vueltas -= 1               #Se utiliza para saber si ya tiene que hacer el reocrrido en reversa
+                            self.regreso = True             #Se encuentra regresando
+                        elif not self.regreso:
+                            self.vueltas += 1
+                        else:
+                            self.vueltas -= 1
+                            if self.vueltas == 0:
+                                self.regreso = False        #No se encuentra regresando
+                        self.direccion = [1,1]
+                        next_move = (x, y)
+                    else:
+                        next_move = (x, y - 1)
+                        self.direccion = [1, -1]
                 
-                 # Definir el número de pasos en cada dirección
-                steps_per_direction = [15, 15, 13, 13, 11, 11, 9, 9, 7, 7]  # Puedes ajustar esto según lo que desees
-                
-                if not hasattr(self, "spiral_step"):
-                    self.spiral_step = 0
-                    self.direction_index = 0
-                    self.current_direction = spiral_directions[self.direction_index]
-                
-                # Calcular la próxima posición en la espiral
-                next_x = self.pos[0] + self.current_direction[0]
-                next_y = self.pos[1] + self.current_direction[1]
-                
-                # Mover al agente a la próxima posición
-                self.model.grid.move_agent(self, (next_x, next_y))
-                
-                # Actualizar el conteo de pasos y la dirección actual
-                self.spiral_step += 1
-                if self.spiral_step == steps_per_direction[self.direction_index]:
-                    self.spiral_step = 0
-                    self.direction_index = (self.direction_index + 1) % len(spiral_directions)
-                    self.current_direction = spiral_directions[self.direction_index]
+                self.model.grid.move_agent(self, next_move)          
+                self.count += 1
   
             else:
                 inicerator_node = self.inc.getPos()
@@ -369,7 +385,7 @@ class Zona(Model):
             (1, self.sizeofmatrix -2),
             (self.sizeofmatrix -2, 1),
             (self.sizeofmatrix -2, self.sizeofmatrix -2),
-            (19, 19)
+            (self.sizeofmatrix // 2 - self.sizeofmatrix // 7, self.sizeofmatrix // 2 - self.sizeofmatrix // 7)
         ]
         
         self.grid = MultiGrid(self.sizeofmatrix, self.sizeofmatrix, torus=False)
