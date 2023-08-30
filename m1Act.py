@@ -218,8 +218,35 @@ class Robot(Agent):
                         self.direccion = [1,1] 
                 
                 self.model.grid.move_agent(self, next_move)          
-                self.count += 1  
-                     
+                self.count += 1
+        
+            #robot en medio
+            elif self.id == 4:
+                # Definir las direcciones de movimiento en la espiral (derecha, abajo, izquierda, arriba)
+                spiral_directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+                
+                 # Definir el número de pasos en cada dirección
+                steps_per_direction = [15, 15, 13, 13, 11, 11, 9, 9, 7, 7]  # Puedes ajustar esto según lo que desees
+                
+                if not hasattr(self, "spiral_step"):
+                    self.spiral_step = 0
+                    self.direction_index = 0
+                    self.current_direction = spiral_directions[self.direction_index]
+                
+                # Calcular la próxima posición en la espiral
+                next_x = self.pos[0] + self.current_direction[0]
+                next_y = self.pos[1] + self.current_direction[1]
+                
+                # Mover al agente a la próxima posición
+                self.model.grid.move_agent(self, (next_x, next_y))
+                
+                # Actualizar el conteo de pasos y la dirección actual
+                self.spiral_step += 1
+                if self.spiral_step == steps_per_direction[self.direction_index]:
+                    self.spiral_step = 0
+                    self.direction_index = (self.direction_index + 1) % len(spiral_directions)
+                    self.current_direction = spiral_directions[self.direction_index]
+  
             else:
                 inicerator_node = self.inc.getPos()
                 path = astar(self.grid, self.last, inicerator_node)
@@ -341,7 +368,8 @@ class Zona(Model):
             (1,1),
             (1, self.sizeofmatrix -2),
             (self.sizeofmatrix -2, 1),
-            (self.sizeofmatrix -2, self.sizeofmatrix -2)
+            (self.sizeofmatrix -2, self.sizeofmatrix -2),
+            (19, 19)
         ]
         
         self.grid = MultiGrid(self.sizeofmatrix, self.sizeofmatrix, torus=False)
@@ -410,7 +438,8 @@ class Zona(Model):
         robot2 = Robot(self, robotpositions[1], incinerator, self.matrix, 1)
         robot3 = Robot(self, robotpositions[2], incinerator, self.matrix, 2)
         robot4 = Robot(self, robotpositions[3], incinerator, self.matrix, 3)
-        robotos=[robot1, robot2, robot3, robot4]
+        robot5 = Robot(self, robotpositions[4], incinerator, self.matrix, 4)
+        robotos=[robot1, robot2, robot3, robot4, robot5]
         
         for robot in robotos:
             self.grid.place_agent(robot, robot.pos)
