@@ -19,78 +19,6 @@ gridsize = 53
 def distancia_entre_puntos(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
 
-class Node:
-    def __init__(self, position, parent=None):
-        self.position = position
-        self.parent = parent
-        self.g = 0
-        self.h = 0
-        self.f = 0
-
-    def __lt__(self, other):
-        return self.f < other.f
-
-def astar(grid, start, end):
-    open_list = []
-    closed_set = set()
-
-    start_node = Node(start)
-    end_node = Node(end)
-    
-    heapq.heappush(open_list, start_node)
-
-    while open_list:
-        current_node = heapq.heappop(open_list)
-
-        if current_node.position == end_node.position:
-            path = []
-            while current_node:
-                path.append(current_node.position)
-                current_node = current_node.parent
-            return path[::-1]
-        
-        closed_set.add(current_node.position)
-
-        for neighbor in get_neighbors(current_node.position, grid):
-            if neighbor in closed_set:
-                continue
-            
-            g_score = current_node.g + 1
-            h_score = heuristic(neighbor, end_node.position)
-            f_score = g_score + h_score
-
-            if any(neighbor == node.position for node in open_list):
-                existing_node = next(node for node in open_list if node.position == neighbor)
-                if g_score < existing_node.g:
-                    existing_node.g = g_score
-                    existing_node.f = f_score
-                    existing_node.parent = current_node
-            else:
-                neighbor_node = Node(neighbor, current_node)
-                neighbor_node.g = g_score
-                neighbor_node.h = h_score
-                neighbor_node.f = f_score
-                heapq.heappush(open_list, neighbor_node)
-
-    return None
-
-def get_neighbors(position, grid):
-    neighbors = []
-    col, row = position  # Swap col and row here
-    rows, cols = len(grid), len(grid[0])
-
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-
-    for dc, dr in directions:  # Swap dc and dr here
-        new_col, new_row = col + dc, row + dr  # Swap new_col and new_row here
-        if 0 <= new_row < rows and 0 <= new_col < cols and grid[new_row][new_col] == 1:
-            neighbors.append((new_col, new_row))  # Swap new_col and new_row here
-    
-    return neighbors
-
-def heuristic(position, goal):
-    return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
-
 # Clase de robot
 class Robot(Agent):
         
@@ -119,6 +47,9 @@ class Robot(Agent):
         #atributos asignados para que el robot sepa si repite recorrido
         self.vueltas = 0
         self.regreso = False
+        
+        #Ultima basura encontrada
+        self.basuraPos = None
         
     def step(self):
         #Espacio del robot de enmedio
@@ -160,6 +91,7 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
+                
                 
             #robot izquierda arriba
             elif self.id == 1: 
@@ -299,36 +231,75 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
-  
-            else:
-                inicerator_node = self.inc.getPos()
-                path = astar(self.grid, self.last, inicerator_node)
-                if self.count < len(path):
-                    next_move = path[self.count]
-                    #print(next_move)
-                    self.model.grid.move_agent(self, next_move)          
-                    self.count += 1
                 
         #Si el estado es CARGADO, el robot tiene basura y va rumbo al incinerador
         elif self.condition == self.CARGADO:
             inicerator_node = self.inc.getPos()
-            path = astar(self.grid, self.last, inicerator_node)
-            if self.count < len(path):
-                next_move = path[self.count]
-                #print(next_move)
-                self.model.grid.move_agent(self, next_move)          
-                self.count += 1
+            mejor_movimiento = None
+            mejor_distancia = float('inf')  # Inicializar con un valor muy grande
+            posiblemovs = [
+                (self.pos[0] + 1, self.pos[1]),
+                (self.pos[0] + 1, self.pos[1] + 1),
+                (self.pos[0], self.pos[1] + 1),
+                (self.pos[0] - 1, self.pos[1] + 1),
+                (self.pos[0] - 1, self.pos[1]),
+                (self.pos[0] - 1, self.pos[1] - 1),
+                (self.pos[0], self.pos[1] - 1),
+                (self.pos[0] + 1, self.pos[1] - 1)
+            ]
+            for movim in posiblemovs:
+                distancia = distancia_entre_puntos(movim, inicerator_node)
+                if distancia < mejor_distancia:
+                    mejor_distancia = distancia
+                    mejor_movimiento = movim
+            next_move = mejor_movimiento
+            self.last = self.pos 
+            self.model.grid.move_agent(self, next_move)
+            if next_move == inicerator_node:
+                self.condition = self.REGRESANDO
                 
         #Si el estado es REGRESANDO, entonces voy de regreso a la posición inicial
         #Se podria implementar con un pathfinding pero teniendo como objetivo la posicion donde encontro la basura
         elif self.condition == self.REGRESANDO:
-            path = astar(self.grid, self.last, self.iniPos)
-            if self.count < len(path):
-                next_move = path[self.count]
-                #print(next_move)
-                self.model.grid.move_agent(self, next_move)          
-                self.count += 1
-
+            mejor_movimiento = None
+            mejor_distancia = float('inf')  # Inicializar con un valor muy grande
+            posiblemovs = [
+                (self.pos[0] + 1, self.pos[1]),
+                (self.pos[0] + 1, self.pos[1] + 1),
+                (self.pos[0], self.pos[1] + 1),
+                (self.pos[0] - 1, self.pos[1] + 1),
+                (self.pos[0] - 1, self.pos[1]),
+                (self.pos[0] - 1, self.pos[1] - 1),
+                (self.pos[0], self.pos[1] - 1),
+                (self.pos[0] + 1, self.pos[1] - 1)
+            ]
+            for movim in posiblemovs:
+                distancia = distancia_entre_puntos(movim, self.basuraPos)
+                if distancia < mejor_distancia:
+                    mejor_distancia = distancia
+                    mejor_movimiento = movim
+            next_move = mejor_movimiento
+            self.last = self.pos 
+            self.model.grid.move_agent(self, next_move)
+            if next_move == self.basuraPos:
+                self.condition = self.IDLE
+                
+    def getPos(self):
+        return self.pos
+    
+    def setBasura(self, pos):
+        self.basuraPos = pos
+        
+    def actualizaEstado(self, estado):
+        if estado == 0:
+            self.condition = self.IDLE
+        elif estado == 1:
+            self.condition = self.CARGADO
+        else:
+            self.condition = self.REGRESANDO   
+            
+    def muestraEstado(self):
+        return self.condition
 
 class Incinerator(Agent):
     
@@ -369,10 +340,19 @@ class WallBlock(Agent):
 
 #Agentes
 class Basura(Agent):
-    
-    def __init__(self, model: Model):
+    RECOLECTADA = 0
+    TIRADA = 1
+    def __init__(self, model: Model, pos, robots):
         super().__init__(model.next_id(), model)
-    
+        self.pos = pos
+        self.robots = robots
+        self.condition = self.TIRADA
+    def step(self):
+        if self.pos == self.robots.getPos() and self.condition == self.TIRADA and self.robots.muestraEstado() == 0:
+            self.robots.setBasura(self.pos)
+            self.condition = self.RECOLECTADA
+            self.robots.actualizaEstado(1)
+
     # def step(self):
     #     if self.condition == self.BURNING:
 
@@ -448,24 +428,7 @@ class Zona(Model):
             j += 1
         
         #print(self.matrix)
-        
-        trashPositions = []
-        
-        for x in range(self.grid.width):
-            for y in range(self.grid.height):
-                if self.random.random() < density:
-                    if self.matrix[y][x] == 1:
-                        trashcoor = []
-                        basura = Basura(self)
-                        # if x == 25: #Origen cambiado al centro del grid
-                        #     basura.condition = Basura.BURNING
-                        self.grid.place_agent(basura, (x, y))
-                        trashcoor.append(x)
-                        trashcoor.append(y)
-                        trashPositions.append(trashcoor)
-                        self.schedule.add(basura)
-        
-        print(trashPositions)
+
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
@@ -494,6 +457,21 @@ class Zona(Model):
         robot5 = Robot(self, robotpositions[4], incinerator, self.matrix, 4)
         robotos=[robot1, robot2, robot3, robot4, robot5]
         
+        trashPositions = []
+        for x in range(self.grid.width):
+            for y in range(self.grid.height):
+                if self.random.random() < density:
+                    if self.matrix[y][x] == 1:
+                        trashcoor = []
+                        basura = Basura(self,(x,y),robotos[0])
+                        # if x == 25: #Origen cambiado al centro del grid
+                        #     basura.condition = Basura.BURNING
+                        self.grid.place_agent(basura, (x, y))
+                        trashcoor.append(x)
+                        trashcoor.append(y)
+                        trashPositions.append(trashcoor)
+                        self.schedule.add(basura)
+                        
         for robot in robotos:
             self.grid.place_agent(robot, robot.pos)
             self.schedule.add(robot)
@@ -524,6 +502,7 @@ def agent_portrayal(agent):
     robota = {"Shape": "steve.png", "Layer": 3}
     robotb = {"Shape": "herobrine.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
+    pisoBasura = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#FFFFFF", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
     #basuraa = {"Shape": "coal.png", "Layer": 1}
     basuraa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#7b8c89", "Layer": 1}
@@ -553,7 +532,10 @@ def agent_portrayal(agent):
             return(robotb)
         
     elif type(agent)==Basura:
-        return(basuraa)
+        if agent.condition == agent.TIRADA:
+            return(basuraa)
+        else:
+            return(pisoBasura)
 
     #return portrayal
 
