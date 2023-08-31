@@ -4,7 +4,7 @@ import heapq
 from random import randrange
 from mesa import Agent, Model
 from mesa.space import MultiGrid
-from mesa.time import RandomActivation
+from mesa.time import BaseScheduler
 
 from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
@@ -91,7 +91,6 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
-                
                 
             #robot izquierda arriba
             elif self.id == 1: 
@@ -348,10 +347,11 @@ class Basura(Agent):
         self.robots = robots
         self.condition = self.TIRADA
     def step(self):
-        if self.pos == self.robots.getPos() and self.condition == self.TIRADA and self.robots.muestraEstado() == 0:
-            self.robots.setBasura(self.pos)
-            self.condition = self.RECOLECTADA
-            self.robots.actualizaEstado(1)
+        for robot in self.robots:
+            if self.pos == robot.getPos() and self.condition == self.TIRADA and robot.muestraEstado() == 0:
+                robot.setBasura(self.pos)
+                self.condition = self.RECOLECTADA
+                robot.actualizaEstado(1)
 
     # def step(self):
     #     if self.condition == self.BURNING:
@@ -378,7 +378,7 @@ class Zona(Model):
 
     def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=83):
         super().__init__()
-        self.schedule = RandomActivation(self)
+        self.schedule = BaseScheduler(self)
         self.sizeofmatrix = sizeofmatrix
         
         #se actualiza gridsize en caso que se cambie de medidas con el slider
@@ -388,14 +388,6 @@ class Zona(Model):
         
         #Posición del incinerador (en medio de todo)
         incineratorposition=(sizeofmatrix//2,sizeofmatrix//2)
-        
-        #Posiciones de cada robot
-        # robotpositions=[
-        #     (self.sizeofmatrix//self.sizeofmatrix,self.sizeofmatrix//self.sizeofmatrix),
-        #     (self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix),
-        #     (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix//self.sizeofmatrix),
-        #     (self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix, self.sizeofmatrix - 1 - self.sizeofmatrix//self.sizeofmatrix)
-        # ]
         
         robotpositions=[
             (1,1),
@@ -463,7 +455,7 @@ class Zona(Model):
                 if self.random.random() < density:
                     if self.matrix[y][x] == 1:
                         trashcoor = []
-                        basura = Basura(self,(x,y),robotos[0])
+                        basura = Basura(self,(x,y),robotos)
                         # if x == 25: #Origen cambiado al centro del grid
                         #     basura.condition = Basura.BURNING
                         self.grid.place_agent(basura, (x, y))
@@ -497,10 +489,10 @@ class Zona(Model):
         
 def agent_portrayal(agent):
     
-    incineratora= {"Shape": "horno.png", "Layer": 2}
-    incineratorb= {"Shape": "hornoencendido.png", "Layer": 2}
-    robota = {"Shape": "steve.png", "Layer": 3}
-    robotb = {"Shape": "herobrine.png", "Layer": 3}
+    incineratora= {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/horno.png", "Layer": 2}
+    incineratorb= {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/hornoencendido.png", "Layer": 2}
+    robota = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/steve.png", "Layer": 3}
+    robotb = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/herobrine.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     pisoBasura = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#FFFFFF", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
