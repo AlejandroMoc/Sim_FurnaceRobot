@@ -121,21 +121,33 @@ class Robot(Agent):
         self.regreso = False
         
     def step(self):
+        #Espacio del robot de enmedio
+        small_grid_1 = gridsize - gridsize // 2 + gridsize // 7 #hacia la derecha y arriba
+        small_grid_2 = gridsize // 2 - gridsize // 7 #hacia la izquierda y abajo
         #Si el estado es IDLE, entonces busca basura
         if self.condition == self.IDLE:
             x,y = self.pos
             #robot abajo izquierda   
             if self.id == 0:              
                 #movimientos hacia la derecha y arriba
-                if x < gridsize//2 and self.direccion[0] == 1:
-                    next_move = (x + 1,y)
-                elif x == gridsize//2 and self.direccion[0] == 1:
+                if x + 1 == small_grid_2 and y >= small_grid_2 and self.direccion[0] == 1:
                     if (y == gridsize//2 - 1):
                         return
                     else:
                         next_move = (x, y + 1)
                         self.direccion = [-1,1]
-                    
+                elif x < gridsize//2 and self.direccion[0] == 1:
+                    next_move = (x + 1,y)  
+                elif x == gridsize//2 and self.direccion[0] == 1:
+                    if (y == gridsize//2 - 1):
+                        return
+                    elif y + 1 == small_grid_2:
+                        next_move = (x - 1, y)
+                        self.direccion = [-1,1]
+                    else:
+                        next_move = (x, y + 1)
+                        self.direccion = [-1,1]
+
                 #movimientos hacia la izquierda y arriba
                 elif x > 1 and self.direccion[0] == -1:
                     next_move = (x - 1,y)
@@ -152,11 +164,20 @@ class Robot(Agent):
             #robot izquierda arriba
             elif self.id == 1: 
                 #movimientos hacia la derecha y abajo
-                if x < gridsize//2 - 1 and self.direccion[0] == 1:
+                if x + 1 == small_grid_2 and y <= small_grid_1 and self.direccion[0] == 1:
+                    if (y == gridsize//2):
+                        return
+                    else:
+                        next_move = (x, y - 1)
+                        self.direccion = [-1,1]
+                elif x < gridsize//2 - 1 and self.direccion[0] == 1:
                     next_move = (x + 1,y)
                 elif x == gridsize//2 - 1 and self.direccion[0] == 1:
                     if (y == gridsize//2):
                         return
+                    elif y == small_grid_1:
+                        next_move = (x - 1, y)
+                        self.direccion = [-1,1]
                     else:
                         next_move = (x, y - 1)
                         self.direccion = [-1,1]
@@ -173,19 +194,28 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1 
-                
+                        
             #robot abajo derecha 
             elif self.id == 2: 
                 #movimientos hacia la izquierda y arriba
-                if x > gridsize//2 + 1 and self.direccion[0] == 1:
-                    next_move = (x - 1,y)
-                elif x == gridsize//2 + 1 and self.direccion[0] == 1:
+                if x == small_grid_1 and y >= small_grid_2 and self.direccion[0] == 1:
                     if (y == gridsize//2):
                         return
                     else:
                         next_move = (x, y + 1)
                         self.direccion = [-1,1]
-                    
+                elif x > gridsize//2 + 1 and self.direccion[0] == 1:
+                    next_move = (x - 1,y)
+                elif x == gridsize//2 + 1 and self.direccion[0] == 1:
+                    if (y == gridsize//2):
+                        return
+                    elif y + 1 == small_grid_2:
+                        next_move = (x - 1, y)
+                        self.direccion = [-1,1]
+                    else:
+                        next_move = (x, y + 1)
+                        self.direccion = [-1,1]
+                        
                 #movimientos hacia la derecha y arriba
                 elif x < gridsize - 2 and self.direccion[0] == -1:
                     next_move = (x + 1,y)
@@ -202,15 +232,24 @@ class Robot(Agent):
             #robot arriba derecha 
             elif self.id == 3: 
                 #movimientos hacia la izquierda y abajo
-                if x > gridsize//2 and self.direccion[0] == 1:
-                    next_move = (x - 1,y)
-                elif x == gridsize//2 and self.direccion[0] == 1:
+                if x == small_grid_1 and y <= small_grid_1 and self.direccion[0] == 1:
                     if (y == gridsize//2 + 1):
                         return
                     else:
                         next_move = (x, y - 1)
                         self.direccion = [-1,1]
-                    
+                elif x > gridsize//2 and self.direccion[0] == 1:
+                    next_move = (x - 1,y)
+                elif x == gridsize//2 and self.direccion[0] == 1:
+                    if (y == gridsize//2 + 1):
+                        return
+                    elif y == small_grid_1:
+                        next_move = (x - 1, y)
+                        self.direccion = [-1,1]
+                    else:
+                        next_move = (x, y - 1)
+                        self.direccion = [-1,1]
+                        
                 #movimientos hacia la derecha y abajo
                 elif x < gridsize - 2 and self.direccion[0] == -1:
                     next_move = (x + 1,y)
@@ -226,8 +265,6 @@ class Robot(Agent):
         
             #robot en medio
             elif self.id == 4:
-                small_grid_1 = gridsize - gridsize // 2 + gridsize // 7 #espacio hacia la derecha
-                small_grid_2 = gridsize // 2 - gridsize // 7 #espacio hacia la izquierda
                 x,y = self.pos           
                 #movimientos hacia la derecha y arriba
                 if x < small_grid_1 - (self.vueltas + 1) and self.direccion[0] == 1 and self.direccion[1] == 1:
