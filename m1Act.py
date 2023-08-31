@@ -256,7 +256,8 @@ class Robot(Agent):
             self.model.grid.move_agent(self, next_move)
             if next_move == inicerator_node:
                 self.condition = self.REGRESANDO
-                
+            self.count += 1
+
         #Si el estado es REGRESANDO, entonces voy de regreso a la posición inicial
         #Se podria implementar con un pathfinding pero teniendo como objetivo la posicion donde encontro la basura
         elif self.condition == self.REGRESANDO:
@@ -282,7 +283,8 @@ class Robot(Agent):
             self.model.grid.move_agent(self, next_move)
             if next_move == self.basuraPos:
                 self.condition = self.IDLE
-                
+            self.count += 1
+            
     def getPos(self):
         return self.pos
     
@@ -301,10 +303,6 @@ class Robot(Agent):
         return self.condition
 
 class Incinerator(Agent):
-    
-    # FINE = 0
-    # BURNING = 1
-    # BURNT_OUT = 2
     
     APAGADO = 0
     ENCENDIDO = 1
@@ -398,8 +396,6 @@ class Zona(Model):
         ]
         
         self.grid = MultiGrid(self.sizeofmatrix, self.sizeofmatrix, torus=False)
-
-        #ESTO SE DEBE CAMBIAR SUPONGO
                 
         #Dibujado de la matriz sizeofmatrix x sizeofmatrix
         self.matrix=[]
@@ -418,9 +414,6 @@ class Zona(Model):
                 self.matrix[i].insert(0, 0)
                 self.matrix[i].insert(self.sizeofmatrix, 0)
             j += 1
-        
-        #print(self.matrix)
-
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
@@ -449,19 +442,12 @@ class Zona(Model):
         robot5 = Robot(self, robotpositions[4], incinerator, self.matrix, 4)
         robotos=[robot1, robot2, robot3, robot4, robot5]
         
-        trashPositions = []
         for x in range(self.grid.width):
             for y in range(self.grid.height):
                 if self.random.random() < density:
                     if self.matrix[y][x] == 1:
-                        trashcoor = []
                         basura = Basura(self,(x,y),robotos)
-                        # if x == 25: #Origen cambiado al centro del grid
-                        #     basura.condition = Basura.BURNING
                         self.grid.place_agent(basura, (x, y))
-                        trashcoor.append(x)
-                        trashcoor.append(y)
-                        trashPositions.append(trashcoor)
                         self.schedule.add(basura)
                         
         for robot in robotos:
@@ -489,10 +475,10 @@ class Zona(Model):
         
 def agent_portrayal(agent):
     
-    incineratora= {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/horno.png", "Layer": 2}
-    incineratorb= {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/hornoencendido.png", "Layer": 2}
-    robota = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/steve.png", "Layer": 3}
-    robotb = {"Shape": "/Users/LACG2/OneDrive/Escritorio/Python/Multiagentes/M1_1/E3_M1Actividad/herobrine.png", "Layer": 3}
+    incineratora= {"Shape": "robothorno.png", "Layer": 2}
+    incineratorb= {"Shape": "robothornoencendido.png", "Layer": 2}
+    robota = {"Shape": "robotsteve.png", "Layer": 3}
+    robotb = {"Shape": "herobrine.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     pisoBasura = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#FFFFFF", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
