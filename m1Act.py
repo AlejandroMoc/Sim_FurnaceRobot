@@ -374,10 +374,11 @@ class Basura(Agent):
 
 class Zona(Model):
 
-    def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=83):
+    def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=gridsize, maxsteps=100):
         super().__init__()
         self.schedule = BaseScheduler(self)
         self.sizeofmatrix = sizeofmatrix
+        self.maxsteps=maxsteps
         
         #se actualiza gridsize en caso que se cambie de medidas con el slider
         global gridsize
@@ -469,15 +470,15 @@ class Zona(Model):
         self.schedule.step()
         self.datacollector.collect(self)
         
-        # Ejecutar hasta paso específico (opcional)
-        # if self.schedule.steps==20:
-        #     self.running=False
+        #Ejecutar hasta paso específico
+        if self.schedule.steps==self.maxsteps:
+            self.running=False
         
 def agent_portrayal(agent):
     
-    incineratora= {"Shape": "robothorno.png", "Layer": 2}
-    incineratorb= {"Shape": "robothornoencendido.png", "Layer": 2}
-    robota = {"Shape": "robotsteve.png", "Layer": 3}
+    incineratora= {"Shape": "horno.png", "Layer": 2}
+    incineratorb= {"Shape": "hornoencendido.png", "Layer": 2}
+    robota = {"Shape": "steve.png", "Layer": 3}
     robotb = {"Shape": "herobrine.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     pisoBasura = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#FFFFFF", "Layer": 0}
@@ -523,8 +524,9 @@ grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *1
 chart = ChartModule([{"Label": "Basura recogida", "Color": "Black"}], data_collector_name = 'datacollector')
 
 server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
-    "density": Slider("Densidad de la basura", 0.1, 0.01, 0.1, 0.01),
-    "sizeofmatrix": Slider("Tamaño de la simulación", gridsize, 21, gridsize, 1),
+    "density": Slider("Densidad de la basura", 0.1, 0.01, 0.1, 0.01, "Densidad de la basura."),
+    "sizeofmatrix": Slider("Tamaño de la simulación", gridsize, 21, gridsize, 1, "Tamaño de la matriz."),
+    "maxsteps": Slider("Pasos máximos", 4000,0,5000,1, "Cantidad de pasos máximos."),
     "width":50, "height":50,
 })
 
