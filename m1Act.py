@@ -1,8 +1,5 @@
 # Importación de librerías
 import math
-import heapq
-import time
-from random import randrange
 from mesa import Agent, Model
 from mesa.space import MultiGrid
 from mesa.time import BaseScheduler
@@ -15,8 +12,8 @@ from mesa.visualization.modules import ChartModule
 
 #Gridsize Inicial
 gridsize = 53
-
 robotCentral = [0,0]
+
 #Funciones para pathfinding
 def distancia_entre_puntos(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
@@ -33,7 +30,6 @@ class Robot(Agent):
         self.pos = pos
         self.iniPos = pos
         #Agregado
-        self.radio = 1.0
         self.inc = inc
         self.last = pos
         self.grid = grid
@@ -53,14 +49,18 @@ class Robot(Agent):
         #Ultima basura encontrada
         self.basuraPos = None
         
+        #pasos de cada robot
+        self.steps = 0
+        
     def step(self):
         #Espacio del robot de enmedio
         small_grid_1 = gridsize - gridsize // 2 + gridsize // 7 #hacia la derecha y arriba
         small_grid_2 = gridsize // 2 - gridsize // 7 #hacia la izquierda y abajo
         global robotCentral
+        
+        x,y = self.pos
         #Si el estado es IDLE, entonces busca basura
         if self.condition == self.IDLE:
-            x,y = self.pos
             #robot abajo izquierda   
             if self.id == 0:              
                 #movimientos hacia la derecha y arriba
@@ -94,6 +94,7 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
+                self.steps += 1
                 
             #robot izquierda arriba
             elif self.id == 1: 
@@ -128,7 +129,8 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1 
-                        
+                self.steps += 1     
+                   
             #robot abajo derecha 
             elif self.id == 2: 
                 #movimientos hacia la izquierda y arriba
@@ -162,7 +164,8 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1                
-
+                self.steps += 1
+                
             #robot arriba derecha 
             elif self.id == 3: 
                 #movimientos hacia la izquierda y abajo
@@ -196,10 +199,10 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
-        
+                self.steps += 1
+                
             #robot en medio
-            elif self.id == 4:
-                x,y = self.pos           
+            elif self.id == 4:         
                 #movimientos hacia la derecha y arriba
                 if x < small_grid_1 - (self.vueltas + 1) and self.direccion[0] == 1 and self.direccion[1] == 1:
                     next_move = (x + 1,y)
@@ -234,37 +237,41 @@ class Robot(Agent):
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
                 robotCentral = next_move
-                
+                self.steps += 1   
+                  
         #Si el estado es CARGADO, el robot tiene basura y va rumbo al incinerador
         elif self.condition == self.CARGADO:
-            inicerator_node = self.inc.getPos()
-            mejor_movimiento = None
-            mejor_distancia = float('inf')  # Inicializar con un valor muy grande
-            posiblemovs = [
-                (self.pos[0] + 1, self.pos[1]),
-                (self.pos[0] + 1, self.pos[1] + 1),
-                (self.pos[0], self.pos[1] + 1),
-                (self.pos[0] - 1, self.pos[1] + 1),
-                (self.pos[0] - 1, self.pos[1]),
-                (self.pos[0] - 1, self.pos[1] - 1),
-                (self.pos[0], self.pos[1] - 1),
-                (self.pos[0] + 1, self.pos[1] - 1)
-            ]
-            for movim in posiblemovs:
-                distancia = distancia_entre_puntos(movim, inicerator_node)
-                if distancia < mejor_distancia and movim != robotCentral:
-                    mejor_distancia = distancia
-                    mejor_movimiento = movim
-            next_move = mejor_movimiento
-            self.last = self.pos 
-            self.model.grid.move_agent(self, next_move)
-            if next_move == inicerator_node:
-                self.condition = self.REGRESANDO
-                self.inc.actualizaEstado(1)
-            self.count += 1
-
+            if self.inc.muestraEstado() == 1:
+                next_move = (x,y)
+            else:
+                inicerator_node = self.inc.getPos()
+                mejor_movimiento = None
+                mejor_distancia = float('inf')  # Inicializar con un valor muy grande
+                posiblemovs = [
+                    (self.pos[0] + 1, self.pos[1]),
+                    (self.pos[0] + 1, self.pos[1] + 1),
+                    (self.pos[0], self.pos[1] + 1),
+                    (self.pos[0] - 1, self.pos[1] + 1),
+                    (self.pos[0] - 1, self.pos[1]),
+                    (self.pos[0] - 1, self.pos[1] - 1),
+                    (self.pos[0], self.pos[1] - 1),
+                    (self.pos[0] + 1, self.pos[1] - 1)
+                ]
+                for movim in posiblemovs:
+                    distancia = distancia_entre_puntos(movim, inicerator_node)
+                    if distancia < mejor_distancia and movim != robotCentral:
+                        mejor_distancia = distancia
+                        mejor_movimiento = movim
+                next_move = mejor_movimiento
+                self.last = self.pos 
+                self.model.grid.move_agent(self, next_move)
+                if next_move == inicerator_node:
+                    self.condition = self.REGRESANDO
+                    self.inc.actualizaEstado(1)
+                self.count += 1
+                self.steps += 1
+                
         #Si el estado es REGRESANDO, entonces voy de regreso a la posición inicial
-        #Se podria implementar con un pathfinding pero teniendo como objetivo la posicion donde encontro la basura
         elif self.condition == self.REGRESANDO:
             mejor_movimiento = None
             mejor_distancia = float('inf')  # Inicializar con un valor muy grande
@@ -289,6 +296,7 @@ class Robot(Agent):
             if next_move == self.basuraPos:
                 self.condition = self.IDLE
             self.count += 1
+            self.steps += 1
             
     def getPos(self):
         return self.pos
@@ -315,16 +323,15 @@ class Incinerator(Agent):
     def __init__(self, model, pos):
         super().__init__(model.next_id(), model)
         self.pos = pos
-        self.radio = 1
         self.condition = self.APAGADO
         self.tiempo = 0
 
     def step(self):
         if self.condition == self.ENCENDIDO:
-            #time.sleep(1)
             self.tiempo += 1
-            if self.tiempo == 3:
+            if self.tiempo == 5: #Tiempo que estara ocupado el incinerador
                 self.condition = self.APAGADO
+                self.tiempo = 0
             
     def getPos(self):
         return self.pos
@@ -365,6 +372,7 @@ class Basura(Agent):
                 robot.actualizaEstado(1)
     def getPos(self):
         return self.pos
+    
 class Zona(Model):
 
     def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=gridsize, maxsteps=100):
@@ -376,8 +384,8 @@ class Zona(Model):
         #se actualiza gridsize en caso que se cambie de medidas con el slider
         global gridsize
         gridsize = sizeofmatrix
-        #Posiciones iniciales
         
+        #Posiciones iniciales 
         #Posición del incinerador (en medio de todo)
         incineratorposition=(sizeofmatrix//2,sizeofmatrix//2)
         
@@ -402,9 +410,7 @@ class Zona(Model):
             elif i == self.sizeofmatrix-1 and j == self.sizeofmatrix-1:
                 self.matrix.append([0]*self.sizeofmatrix)
             else:
-                #matrix.append([0])
                 self.matrix.append([1] *(self.sizeofmatrix-2))
-                #matrix.append([0])
                 self.matrix[i].insert(0, 0)
                 self.matrix[i].insert(self.sizeofmatrix, 0)
             j += 1
@@ -419,7 +425,6 @@ class Zona(Model):
                     
                 #Si la posición tiene 0, es tipo Muro
                 if self.matrix[y][x] == 0:
-                    #print(f"block at ({x}, {y})")
                     block2 = WallBlock(self, (x, y))
                     self.grid.place_agent(block2, block2.pos)
         
@@ -448,17 +453,19 @@ class Zona(Model):
             self.grid.place_agent(robot, robot.pos)
             self.schedule.add(robot)
             
-        ### Contar cuántos árboles ya se recolectaron. Dividir cantidad con respecto a total, dando porcentaje
         #Función lambda es una función anónima que puede pasar como parámetro             
-        self.datacollector = DataCollector({"Porcentaje celdas limpias": lambda m: self.count_type(m, Basura.RECOLECTADA)})
-
+        self.datacollector = DataCollector({"Porcentaje celdas limpias": lambda m: self.count_type(m, Basura.TIRADA, self.sizeofmatrix)})
+        
     @staticmethod
-    def count_type(model, condition):
+    def count_type(model, condition, sizeofmatrix):
         count = 0
+        total_celdas = sizeofmatrix * sizeofmatrix
         for basura in model.schedule.agents:
             if basura.condition == condition:
                 count += 1
-        return count
+        celdas_limpias = total_celdas - count
+        porcentaje_limpias = (celdas_limpias / total_celdas) * 100
+        return porcentaje_limpias
     
     def step(self):
         self.schedule.step()
@@ -477,14 +484,12 @@ def agent_portrayal(agent):
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     pisoBasura = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#FFFFFF", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
-    #basuraa = {"Shape": "coal.png", "Layer": 1}
     basuraa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#7b8c89", "Layer": 1}
     
     
     if type(agent)==WallBlock:
         return(wallblocka)
-    # elif type(agent)==Piso:
-    #     return(pisoa)
+    
     elif type(agent)==Incinerator:
         #Si el incinerador no tiene carga, regresar horno
         if agent.condition == agent.APAGADO:
@@ -509,13 +514,11 @@ def agent_portrayal(agent):
             return(basuraa)
         else:
             return(pisoBasura)
-
-    #return portrayal
+        
 
 grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *10)
 
-#Pregunta 1.3
-chart = ChartModule([{"Label": "Basura recogida", "Color": "Black"}], data_collector_name = 'datacollector')
+chart = ChartModule([{"Label": "Porcentaje celdas limpias", "Color": "Black"}], data_collector_name = 'datacollector')
 
 server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
     "density": Slider("Densidad de la basura", 0.1, 0.01, 0.1, 0.01, "Densidad de la basura."),
