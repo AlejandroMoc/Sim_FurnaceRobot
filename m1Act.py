@@ -1,6 +1,7 @@
 # Importación de librerías
 import math
 import heapq
+import time
 from random import randrange
 from mesa import Agent, Model
 from mesa.space import MultiGrid
@@ -15,6 +16,7 @@ from mesa.visualization.modules import ChartModule
 #Gridsize Inicial
 gridsize = 53
 
+robotCentral = [0,0]
 #Funciones para pathfinding
 def distancia_entre_puntos(p1, p2):
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
@@ -55,6 +57,7 @@ class Robot(Agent):
         #Espacio del robot de enmedio
         small_grid_1 = gridsize - gridsize // 2 + gridsize // 7 #hacia la derecha y arriba
         small_grid_2 = gridsize // 2 - gridsize // 7 #hacia la izquierda y abajo
+        global robotCentral
         #Si el estado es IDLE, entonces busca basura
         if self.condition == self.IDLE:
             x,y = self.pos
@@ -230,6 +233,7 @@ class Robot(Agent):
                 
                 self.model.grid.move_agent(self, next_move)          
                 self.count += 1
+                robotCentral = next_move
                 
         #Si el estado es CARGADO, el robot tiene basura y va rumbo al incinerador
         elif self.condition == self.CARGADO:
@@ -248,7 +252,7 @@ class Robot(Agent):
             ]
             for movim in posiblemovs:
                 distancia = distancia_entre_puntos(movim, inicerator_node)
-                if distancia < mejor_distancia:
+                if distancia < mejor_distancia and movim != robotCentral:
                     mejor_distancia = distancia
                     mejor_movimiento = movim
             next_move = mejor_movimiento
@@ -256,6 +260,7 @@ class Robot(Agent):
             self.model.grid.move_agent(self, next_move)
             if next_move == inicerator_node:
                 self.condition = self.REGRESANDO
+                self.inc.actualizaEstado(1)
             self.count += 1
 
         #Si el estado es REGRESANDO, entonces voy de regreso a la posición inicial
@@ -275,7 +280,7 @@ class Robot(Agent):
             ]
             for movim in posiblemovs:
                 distancia = distancia_entre_puntos(movim, self.basuraPos)
-                if distancia < mejor_distancia:
+                if distancia < mejor_distancia and (movim != robotCentral or self.id == 4):
                     mejor_distancia = distancia
                     mejor_movimiento = movim
             next_move = mejor_movimiento
@@ -312,18 +317,26 @@ class Incinerator(Agent):
         self.pos = pos
         self.radio = 1
         self.condition = self.APAGADO
+        self.tiempo = 0
 
-    #def step(self):
-    #    return None
-
+    def step(self):
+        if self.condition == self.ENCENDIDO:
+            #time.sleep(1)
+            self.tiempo += 1
+            if self.tiempo == 3:
+                self.condition = self.APAGADO
+            
     def getPos(self):
         return self.pos
-        
-    def buscaColision(self, fantasma):
-        dx = self.pos[0] - fantasma.self.pos[0]
-        dy = self.pos[1] - fantasma.self.pos[1]
-        distancia = math.sqrt(dx*dx + dy*dy)
-        return distancia < self.radio + fantasma.self.radio
+    
+    def muestraEstado(self):
+        return self.condition
+    
+    def actualizaEstado(self, estado):
+        if estado == 0:
+            self.condition = self.APAGADO
+        elif estado == 1:
+            self.condition = self.ENCENDIDO 
 
 class Piso(Agent):
     def __init__(self, model, pos):
@@ -350,28 +363,8 @@ class Basura(Agent):
                 robot.setBasura(self.pos)
                 self.condition = self.RECOLECTADA
                 robot.actualizaEstado(1)
-
-    # def step(self):
-    #     if self.condition == self.BURNING:
-
-    #         #if self.probability_of_spread2 < self.probability_of_spread:
-                
-    #             #Valor default de la posición del fuego
-    #             #fire_neighbors = self.pos
-                
-    #             #Quemar vecino (no aplica)
-    #             # if self.model.grid.out_of_bounds(fire_neighbors): #Se cambio el condicional inicial
-    #             #     return() #Se agrega un if para cuando se pase del grid
-    #             # elif self.probability_of_spread2<self.probability_of_spread:
-    #             #     for neighbor in self.model.grid.iter_neighbors(fire_neighbors, moore=True):                      #CAMBIADO SELF.POS PARA QUE USE fire_neighbors
-    #             #         if neighbor.condition == self.FINE:
-    #             #             neighbor.condition = self.BURNING
-    #             #     self.condition = self.BURNT_OUT                 
-            
-    #         #ESTO SE TIENE QUE ACTUALIZAR
-    #         #Cuando el robot lo recoja, borrar
-    #         self.condition = self.BURNT_OUT
-
+    def getPos(self):
+        return self.pos
 class Zona(Model):
 
     def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=gridsize, maxsteps=100):
@@ -457,13 +450,14 @@ class Zona(Model):
             
         ### Contar cuántos árboles ya se recolectaron. Dividir cantidad con respecto a total, dando porcentaje
         #Función lambda es una función anónima que puede pasar como parámetro             
-        self.datacollector = DataCollector({"Porcentaje recolectado": lambda m: self.count_type(m, Basura) / len(self.schedule.agents)})
+        self.datacollector = DataCollector({"Porcentaje celdas limpias": lambda m: self.count_type(m, Basura.RECOLECTADA)})
 
     @staticmethod
     def count_type(model, condition):
         count = 0
         for basura in model.schedule.agents:
-            count += 1
+            if basura.condition == condition:
+                count += 1
         return count
     
     def step(self):
