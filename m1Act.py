@@ -301,6 +301,9 @@ class Robot(Agent):
     def getPos(self):
         return self.pos
     
+    def getSteps(self):
+        return self.steps
+    
     def setBasura(self, pos):
         self.basuraPos = pos
         
@@ -314,6 +317,7 @@ class Robot(Agent):
             
     def muestraEstado(self):
         return self.condition
+    
 
 class Incinerator(Agent):
     
@@ -380,7 +384,7 @@ class Zona(Model):
         self.schedule = BaseScheduler(self)
         self.sizeofmatrix = sizeofmatrix
         self.maxsteps=maxsteps
-        
+        self.recorridoTerminado = False
         #se actualiza gridsize en caso que se cambie de medidas con el slider
         global gridsize
         gridsize = sizeofmatrix
@@ -439,17 +443,17 @@ class Zona(Model):
         robot3 = Robot(self, robotpositions[2], incinerator, self.matrix, 2)
         robot4 = Robot(self, robotpositions[3], incinerator, self.matrix, 3)
         robot5 = Robot(self, robotpositions[4], incinerator, self.matrix, 4)
-        robotos=[robot1, robot2, robot3, robot4, robot5]
+        self.robotos=[robot1, robot2, robot3, robot4, robot5]
         
         for x in range(self.grid.width):
             for y in range(self.grid.height):
                 if self.random.random() < density:
                     if self.matrix[y][x] == 1:
-                        basura = Basura(self,(x,y),robotos)
+                        basura = Basura(self,(x,y),self.robotos)
                         self.grid.place_agent(basura, (x, y))
                         self.schedule.add(basura)
                         
-        for robot in robotos:
+        for robot in self.robotos:
             self.grid.place_agent(robot, robot.pos)
             self.schedule.add(robot)
             
@@ -465,15 +469,21 @@ class Zona(Model):
                 count += 1
         celdas_limpias = total_celdas - count
         porcentaje_limpias = (celdas_limpias / total_celdas) * 100
+        if porcentaje_limpias == 100:
+            model.recorridoTerminado = True
         return porcentaje_limpias
     
     def step(self):
         self.schedule.step()
         self.datacollector.collect(self)
         
-        #Ejecutar hasta paso específico
-        if self.schedule.steps==self.maxsteps:
+        #Ejecutar hasta paso específico o hasta que todas las celdas esten limpias
+        if self.schedule.steps==self.maxsteps or self.recorridoTerminado:
+            for i in range(len(self.robotos)): #Se imprimen los pasos de cada robot
+                print ("Pasos del robot", i, self.robotos[i].getSteps())
+            print("Tiempo de ejecucion:", self.schedule.steps)
             self.running=False
+            
         
 def agent_portrayal(agent):
     
