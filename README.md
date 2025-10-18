@@ -1,6 +1,6 @@
 # Furnace Robot Simulation
 
-Simulation of robots cleaning up trash in a grid-based environment.
+Simulation of robots cleaning up coal blocks in a grid-based environment.
 Uses Python and the Mesa framework for agent-based modeling and interactive visualization.
 
 ## Instructions
