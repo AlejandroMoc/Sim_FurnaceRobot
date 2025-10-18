@@ -1,24 +1,16 @@
-# Importación de librerías
 import math
 from mesa import Agent, Model
 from mesa.space import MultiGrid
-from mesa.time import BaseScheduler
+from mesa.time import RandomActivation
 
-from mesa.visualization.modules import CanvasGrid
+from mesa.datacollection import DataCollector
+from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.UserParam import Slider
-from mesa.datacollection import DataCollector
-from mesa.visualization.modules import ChartModule
 
-#Gridsize Inicial
-gridsize = 53
+gridsize = 25
 robotCentral = [0,0]
 
-#Funciones para pathfinding
-def distancia_entre_puntos(p1, p2):
-    return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
-
-# Clase de robot
 class Robot(Agent):
         
     IDLE = 0
@@ -317,7 +309,6 @@ class Robot(Agent):
             
     def muestraEstado(self):
         return self.condition
-    
 
 class Incinerator(Agent):
     
@@ -359,7 +350,6 @@ class WallBlock(Agent):
         super().__init__(model.next_id(), model)
         self.pos = pos
 
-#Agentes
 class Basura(Agent):
     RECOLECTADA = 0
     TIRADA = 1
@@ -381,7 +371,7 @@ class Zona(Model):
 
     def __init__(self, height=50, width=50, density=0.6, sizeofmatrix=gridsize, maxsteps=100):
         super().__init__()
-        self.schedule = BaseScheduler(self)
+        self.schedule = RandomActivation(self)
         self.sizeofmatrix = sizeofmatrix
         self.maxsteps=maxsteps
         self.recorridoTerminado = False
@@ -484,13 +474,16 @@ class Zona(Model):
             print("Tiempo de ejecucion:", self.schedule.steps)
             self.running=False
             
-        
+# Pathfinding functions
+def distancia_entre_puntos(p1, p2):
+    return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
+
 def agent_portrayal(agent):
     
-    incineratora= {"Shape": "horno.png", "Layer": 2}
-    incineratorb= {"Shape": "hornoencendido.png", "Layer": 2}
-    robota = {"Shape": "steve.png", "Layer": 3}
-    robotb = {"Shape": "herobrine.png", "Layer": 3}
+    incineratora= {"Shape": "src/img/horno.png", "Layer": 2}
+    incineratorb= {"Shape": "src/img/hornoencendido.png", "Layer": 2}
+    robota = {"Shape": "src/img/steve.png", "Layer": 3}
+    robotb = {"Shape": "src/img/herobrine.png", "Layer": 3}
     pisoa = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#a4d6a3", "Layer": 0}
     pisoBasura = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#FFFFFF", "Layer": 0}
     wallblocka = {"Shape": "rect", "w": 1, "h":1, "Filled": "true", "Color": "#706d64", "Layer": 1}
@@ -524,18 +517,21 @@ def agent_portrayal(agent):
             return(basuraa)
         else:
             return(pisoBasura)
-        
 
-grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *10)
+def run_simulation():
+    grid = CanvasGrid(agent_portrayal, gridsize, gridsize, gridsize *10, gridsize *10)
 
-chart = ChartModule([{"Label": "Porcentaje celdas limpias", "Color": "Black"}], data_collector_name = 'datacollector')
+    chart = ChartModule([{"Label": "Porcentaje celdas limpias", "Color": "Black"}], data_collector_name = 'datacollector')
 
-server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
-    "density": Slider("Densidad de la basura", 0.1, 0.01, 0.1, 0.01, "Densidad de la basura."),
-    "sizeofmatrix": Slider("Tamaño de la simulación", gridsize, 21, gridsize, 1, "Tamaño de la matriz."),
-    "maxsteps": Slider("Pasos máximos", 4000,0,5000,1, "Cantidad de pasos máximos."),
-    "width":50, "height":50,
-})
+    server = ModularServer(Zona, [grid, chart], "Robots Recolectores", {
+        "density": Slider("Densidad de la basura", 0.1, 0.01, 0.1, 0.01, "Densidad de la basura."),
+        "sizeofmatrix": Slider("Tamaño de la simulación", gridsize, 21, gridsize, 1, "Tamaño de la matriz."),
+        "maxsteps": Slider("Pasos máximos", 4000,0,5000,1, "Cantidad de pasos máximos."),
+        "width":50, "height":50,
+    })
 
-server.port = 8526
-server.launch()
+    server.port = 8526
+    server.launch()
+
+if __name__ == "__main__":
+    run_simulation()
